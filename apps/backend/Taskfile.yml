@@ -1,0 +1,16 @@
+version: "3"
+
+tasks:
+  br:
+    - clear
+    - fvm dart run build_runner watch --delete-conflicting-outputs
+  brc:
+    - fvm dart run build_runner clean
+    - task br
+  format:
+    - clear
+    - fvm dart format --line-length 100 --fix lib
+  swagger:
+    - rm -rf lib/api
+    - fvm dart run swagger_parser
+    - rm doc

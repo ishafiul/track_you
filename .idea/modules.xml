@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/apps/backend/melos_trace_backend.iml" filepath="$PROJECT_DIR$/apps/backend/melos_trace_backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/track_you_core/track_you_core/melos_track_you_core.iml" filepath="$PROJECT_DIR$/packages/track_you_core/track_you_core/melos_track_you_core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/track_you_core/track_you_core_android/melos_track_you_core_android.iml" filepath="$PROJECT_DIR$/packages/track_you_core/track_you_core_android/melos_track_you_core_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/examples/example_trace/melos_track_you_core_example.iml" filepath="$PROJECT_DIR$/examples/example_trace/melos_track_you_core_example.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/track_you_core/track_you_core_ios/melos_track_you_core_ios.iml" filepath="$PROJECT_DIR$/packages/track_you_core/track_you_core_ios/melos_track_you_core_ios.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/track_you_core/track_you_core_platform_interface/melos_track_you_core_platform_interface.iml" filepath="$PROJECT_DIR$/packages/track_you_core/track_you_core_platform_interface/melos_track_you_core_platform_interface.iml" />
+      <module fileurl="file://$PROJECT_DIR$/melos_track_you.iml" filepath="$PROJECT_DIR$/melos_track_you.iml" />
+    </modules>
+  </component>
+</project>

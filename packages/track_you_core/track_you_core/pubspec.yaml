@@ -1,0 +1,32 @@
+name: track_you_core
+description: track sdk
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        default_package: track_you_core_android
+      ios:
+        default_package: track_you_core_ios
+
+dependencies:
+  flutter:
+    sdk: flutter
+  track_you_core_android:
+    path: ../track_you_core_android
+  track_you_core_ios:
+    path: ../track_you_core_ios
+  track_you_core_platform_interface:
+    path: ../track_you_core_platform_interface
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  plugin_platform_interface: ^2.1.8
+  very_good_analysis: ^6.0.0
