@@ -3,9 +3,9 @@ version: "3"
 tasks:
   br:
     - clear
-    - fvm dart run build_runner watch --delete-conflicting-outputs
+    - dart run build_runner watch --delete-conflicting-outputs
   brc:
-    - fvm dart run build_runner clean
+    - dart run build_runner clean
     - task br
   format:
     - clear

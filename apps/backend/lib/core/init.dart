@@ -10,7 +10,6 @@ final getIt = GetIt.instance;
 Future<void> init() async {
   await getIt.reset();
   getIt.init();
-  AppDatabase().users.createAlias('users');
   setupSwagger(
     autoGlobalComponents: false,
     title: 'Todo API',
