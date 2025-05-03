@@ -1,3 +1,7 @@
+## 0.0.1
+
+ - **FEAT**: trace package initialization.
+
 ## 0.0.0+1
 
  - **FIX**: android setup.
