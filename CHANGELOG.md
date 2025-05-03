@@ -15,6 +15,27 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`trace_backend` - `v0.0.1+1`](#trace_backend---v0011)
+
+---
+
+#### `trace_backend` - `v0.0.1+1`
+
+ - **FIX**: removed methods.
+
+
+## 2025-05-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`trace_backend` - `v0.0.1`](#trace_backend---v001)
 
 ---
