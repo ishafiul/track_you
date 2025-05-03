@@ -9,7 +9,7 @@
     },
     {
       "name": "_macros",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/bin/cache/dart-sdk/pkg/_macros",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/bin/cache/dart-sdk/pkg/_macros",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -716,10 +716,10 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-02-18T20:01:31.857335Z",
+  "generated": "2025-05-03T18:14:57.400968Z",
   "generator": "pub",
-  "generatorVersion": "3.7.0",
-  "flutterRoot": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable",
-  "flutterVersion": "3.29.0",
+  "generatorVersion": "3.7.2",
+  "flutterRoot": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable",
+  "flutterVersion": "3.29.3",
   "pubCache": "file:///Users/shafiulislam/.pub-cache"
 }

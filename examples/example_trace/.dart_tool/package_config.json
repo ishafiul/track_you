@@ -45,31 +45,31 @@
     },
     {
       "name": "flutter",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/packages/flutter",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
     {
       "name": "flutter_driver",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/packages/flutter_driver",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/flutter_driver",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
     {
       "name": "flutter_test",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/packages/flutter_test",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/flutter_test",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
     {
       "name": "fuchsia_remote_debug_protocol",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/packages/fuchsia_remote_debug_protocol",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/fuchsia_remote_debug_protocol",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
     {
       "name": "integration_test",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/packages/integration_test",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/integration_test",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
@@ -135,7 +135,7 @@
     },
     {
       "name": "sky_engine",
-      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable/bin/cache/pkg/sky_engine",
+      "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
@@ -236,10 +236,10 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2025-02-18T20:01:31.792415Z",
+  "generated": "2025-05-03T18:17:15.635494Z",
   "generator": "pub",
-  "generatorVersion": "3.7.0",
-  "flutterRoot": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.0-stable",
-  "flutterVersion": "3.29.0",
+  "generatorVersion": "3.7.2",
+  "flutterRoot": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable",
+  "flutterVersion": "3.29.3",
   "pubCache": "file:///Users/shafiulislam/.pub-cache"
 }
