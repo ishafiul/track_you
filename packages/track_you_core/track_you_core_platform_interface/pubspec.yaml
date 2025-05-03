@@ -1,7 +1,6 @@
 name: track_you_core_platform_interface
 description: A common platform interface for the track_you_core plugin.
-version: 0.1.0+1
-publish_to: none
+version: 0.1.1
 
 environment:
   sdk: ^3.5.0

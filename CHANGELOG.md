@@ -15,54 +15,26 @@ Packages with breaking changes:
 
 Packages with other changes:
 
- - [`trace_backend` - `v0.0.1+1`](#trace_backend---v0011)
+ - [`track_you_core` - `v0.1.1`](#track_you_core---v011)
+ - [`track_you_core_android` - `v0.1.1`](#track_you_core_android---v011)
+ - [`track_you_core_ios` - `v0.1.1`](#track_you_core_ios---v011)
+ - [`track_you_core_platform_interface` - `v0.1.1`](#track_you_core_platform_interface---v011)
 
 ---
 
-#### `trace_backend` - `v0.0.1+1`
-
- - **FIX**: removed methods.
-
-
-## 2025-05-04
-
-### Changes
-
----
-
-Packages with breaking changes:
-
- - There are no breaking changes in this release.
-
-Packages with other changes:
-
- - [`trace_backend` - `v0.0.1`](#trace_backend---v001)
-
----
-
-#### `trace_backend` - `v0.0.1`
+#### `track_you_core` - `v0.1.1`
 
  - **FEAT**: trace package initialization.
 
+#### `track_you_core_android` - `v0.1.1`
 
-## 2025-05-04
+ - **FEAT**: trace package initialization.
 
-### Changes
+#### `track_you_core_ios` - `v0.1.1`
 
----
+ - **FEAT**: trace package initialization.
 
-Packages with breaking changes:
+#### `track_you_core_platform_interface` - `v0.1.1`
 
- - There are no breaking changes in this release.
-
-Packages with other changes:
-
- - [`trace_backend` - `v0.0.0+1`](#trace_backend---v0001)
-
----
-
-#### `trace_backend` - `v0.0.0+1`
-
- - **FIX**: android setup.
- - **FIX**: .env.
+ - **FEAT**: trace package initialization.
 
