@@ -1,6 +1,6 @@
 name: trace_backend
 description: Starter Arcade application using recommended code generation libraries
-version: 0.0.0
+version: 0.0.0+1
 environment:
   sdk: ^3.6.0
 
