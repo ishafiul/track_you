@@ -1,6 +1,7 @@
 name: track_you_core
 description: track sdk
 version: 0.1.1
+publish_to: none
 
 environment:
   sdk: ^3.5.0
@@ -16,12 +17,9 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  track_you_core_android:
-    path: ../track_you_core_android
-  track_you_core_ios:
-    path: ../track_you_core_ios
-  track_you_core_platform_interface:
-    path: ../track_you_core_platform_interface
+  track_you_core_android: 0.1.1
+  track_you_core_ios: 0.1.1
+  track_you_core_platform_interface: 0.1.1
 
 dev_dependencies:
   flutter_test:

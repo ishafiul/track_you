@@ -229,28 +229,28 @@ packages:
       path: "../../packages/track_you_core/track_you_core"
       relative: true
     source: path
-    version: "0.1.0+1"
+    version: "0.1.1"
   track_you_core_android:
     dependency: "direct overridden"
     description:
       path: "../../packages/track_you_core/track_you_core_android"
       relative: true
     source: path
-    version: "0.1.0+1"
+    version: "0.1.1"
   track_you_core_ios:
     dependency: "direct overridden"
     description:
       path: "../../packages/track_you_core/track_you_core_ios"
       relative: true
     source: path
-    version: "0.1.0+1"
+    version: "0.1.1"
   track_you_core_platform_interface:
     dependency: "direct overridden"
     description:
       path: "../../packages/track_you_core/track_you_core_platform_interface"
       relative: true
     source: path
-    version: "0.1.0+1"
+    version: "0.1.1"
   vector_math:
     dependency: transitive
     description:
