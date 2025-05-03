@@ -62,13 +62,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadPlatformInfo() async {
     try {
       _addLog('Loading platform info...');
-      final name = await getPlatformName();
-      final version = await getPlatformVersion();
-      _addLog('Platform info loaded: $name, $version');
-      setState(() {
-        _platformName = name;
-        _platformVersion = version;
-      });
+
     } catch (e) {
       _addLog('Error loading platform info: $e');
       setState(() {
