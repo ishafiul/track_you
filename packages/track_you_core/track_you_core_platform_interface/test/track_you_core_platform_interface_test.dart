@@ -6,6 +6,24 @@ class TrackYouCoreMock extends TrackYouCorePlatform {
 
   @override
   Future<String?> getPlatformName() async => mockPlatformName;
+
+  @override
+  Stream<Map<String, dynamic>> getLocationUpdates() {
+    // TODO: implement getLocationUpdates
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> startLocationService() {
+    // TODO: implement startLocationService
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> stopLocationService() {
+    // TODO: implement stopLocationService
+    throw UnimplementedError();
+  }
 }
 
 void main() {
@@ -18,13 +36,5 @@ void main() {
       TrackYouCorePlatform.instance = trackYouCorePlatform;
     });
 
-    group('getPlatformName', () {
-      test('returns correct name', () async {
-        expect(
-          await TrackYouCorePlatform.instance.getPlatformName(),
-          equals(TrackYouCoreMock.mockPlatformName),
-        );
-      });
-    });
   });
 }

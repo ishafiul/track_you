@@ -32,13 +32,5 @@ void main() {
       expect(TrackYouCorePlatform.instance, isA<TrackYouCoreIOS>());
     });
 
-    test('getPlatformName returns correct name', () async {
-      final name = await trackYouCore.getPlatformName();
-      expect(
-        log,
-        <Matcher>[isMethodCall('getPlatformName', arguments: null)],
-      );
-      expect(name, equals(kPlatformName));
-    });
   });
 }

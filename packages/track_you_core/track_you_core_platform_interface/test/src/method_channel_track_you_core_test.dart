@@ -29,13 +29,5 @@ void main() {
 
     tearDown(log.clear);
 
-    test('getPlatformName', () async {
-      final platformName = await methodChannelTrackYouCore.getPlatformName();
-      expect(
-        log,
-        <Matcher>[isMethodCall('getPlatformName', arguments: null)],
-      );
-      expect(platformName, equals(kPlatformName));
-    });
   });
 }

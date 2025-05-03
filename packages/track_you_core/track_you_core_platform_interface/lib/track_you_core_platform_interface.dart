@@ -28,6 +28,12 @@ abstract class TrackYouCorePlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  /// Return the current platform name.
-  Future<String?> getPlatformName();
+  /// Start location service and return a stream of location updates.
+  Stream<Map<String, dynamic>> getLocationUpdates();
+  
+  /// Start the background location service.
+  Future<bool> startLocationService();
+  
+  /// Stop the background location service.
+  Future<bool> stopLocationService();
 }
