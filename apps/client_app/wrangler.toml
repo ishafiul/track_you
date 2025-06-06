@@ -1,0 +1,16 @@
+name = "git-based-cms"
+compatibility_date = "2024-05-15"
+
+[site]
+bucket = "./dist"
+
+[vars]
+GITHUB_BRANCH = "main"
+GITHUB_OWNER= "ishafiul"
+GITHUB_REPO= "cms_test"
+
+# Use environment variables for sensitive data
+# These should be set using wrangler secret put
+# - GITHUB_TOKEN
+# - GITHUB_OWNER
+# - GITHUB_REPO

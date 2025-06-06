@@ -1,0 +1,16 @@
+name = "portfolio-server"
+main = "src/index.ts"
+compatibility_date = "2024-06-05"
+compatibility_flags = ["nodejs_compat"]
+
+services = [
+  { binding = "AUTH_SERVICE", service = "portfolio-auth", entrypoint = "AuthService" },
+  { binding = "EMAIL_SERVICE", service = "portfolio-mail", entrypoint = "EmailService" },
+  { binding = "USER_SERVICE", service = "portfolio-user", entrypoint = "UserService" },
+  { binding = "PERMISSION_MANAGER", service = "permission-manager", entrypoint = "PermissionService" }
+]
+
+[vars]
+GITHUB_BRANCH = "main"
+GITHUB_OWNER = "ishafiul"
+GITHUB_REPO = "cms_test"

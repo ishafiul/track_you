@@ -1,0 +1,67 @@
+---
+import Layout from '../components/Layout.astro';
+import authClient from '../lib/auth-client';
+import type { User } from 'better-auth';
+
+// Get user data from locals - middleware ensures the user is authenticated
+const user = Astro.locals.user as User;
+---
+
+<Layout title="Profile">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center text-gray-900 mb-8">Your Profile</h1>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="bg-indigo-600 px-6 py-8 text-center">
+        <h2 class="text-2xl font-semibold text-white">{user.name || 'User'}</h2>
+        <p class="text-indigo-100 text-sm mt-1">{user.email}</p>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div class="border-b border-gray-200 pb-3">
+          <p class="text-gray-700"><span class="font-medium">User ID:</span> {user.id}</p>
+        </div>
+        <div class="border-b border-gray-200 pb-3">
+          <p class="text-gray-700">
+            <span class="font-medium">Email Verified:</span> 
+            {user.emailVerified ? 
+              <span class="text-green-600">Verified</span> : 
+              <span class="text-red-600">Not Verified</span>}
+          </p>
+        </div>
+        <div class="pb-3">
+          <p class="text-gray-700">
+            <span class="font-medium">Account Created:</span> 
+            {new Date(user.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        
+        <button 
+          id="logout-button" 
+          class="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-300"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import authClient from '../lib/auth-client';
+  
+  // Handle logout
+  const logoutButton = document.getElementById('logout-button');
+  
+  if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await authClient.signOut();
+        window.location.href = '/login';
+      } catch (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+      }
+    });
+  }
+</script> 

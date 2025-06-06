@@ -1,0 +1,34 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "description": "Git-based CMS server",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev src/index.ts",
+    "dev:all": "wrangler dev -c wrangler.toml -c ../workers/auth/wrangler.toml -c ../workers/mail/wrangler.toml -c ../workers/user/wrangler.toml -c ../workers/permission-manager/wrangler.jsonc",
+    "deploy": "wrangler deploy",
+    "auth:migration:generate": "pnpx @better-auth/cli generate --config auth.config.ts --output src/db/schemas/auth.ts -y  && pnpm migration:generate",
+    "migration:generate": "drizzle-kit generate",
+    "migration:push:local": "dotenvx run -f .env -- drizzle-kit push"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "catalog:",
+    "@hono/zod-openapi": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "octokit": "^4.1.3"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "tsx": "catalog:",
+    "permission-manager-worker": "workspace:*",
+    "auth-worker": "workspace:*",
+    "mail-worker": "workspace:*",
+    "user-worker": "workspace:*",
+    "typescript": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

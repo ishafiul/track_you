@@ -1,0 +1,37 @@
+---
+import Layout from '../components/Layout.astro';
+---
+
+<Layout title="Dashboard">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+      <div>
+        <button
+          id="logout-button"
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors duration-300"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+</Layout>
+
+<script>
+  import authClient from '../lib/auth-client';
+  import '../lib/auth-check'
+  // Handle logout
+  const logoutButton = document.getElementById('logout-button');
+
+  if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+      try {
+
+        await authClient.signOut();
+      } catch (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+      }
+    });
+  }
+</script>

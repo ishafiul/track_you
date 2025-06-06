@@ -1,0 +1,31 @@
+{
+	"name": "auth-worker",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"cf-typegen": "wrangler types",
+		"migration:generate": "dotenvx run -f .env -- drizzle-kit generate",
+		"migration:migrate": "dotenvx run -f .env -- drizzle-kit migrate"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@types/uuid": "catalog:",
+		"drizzle-kit": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
+	},
+	"dependencies": {
+		"@libsql/client": "catalog:",
+		"dotenv": "catalog:",
+		"drizzle-orm": "catalog:",
+		"drizzle-zod": "catalog:",
+		"tsx": "catalog:",
+		"uuid": "catalog:"
+	}
+}

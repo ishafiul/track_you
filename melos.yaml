@@ -1,5 +1,6 @@
 name: track_you
 packages:
-  - apps/*
-  - packages/**
-  - examples/*
+  - apps/flutter/**
+  - packages/dart/**
+  - packages/flutter/**
+  - examples/flutter/**

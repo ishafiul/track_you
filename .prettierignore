@@ -1,0 +1,45 @@
+# Dependency directories
+node_modules
+.pnpm-store
+.pnpm
+
+# Build outputs
+dist
+build
+out
+.next
+.nuxt
+.output
+.cache
+.wrangler
+
+# Coverage and test directories
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE and editor directories
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Misc
+.turbo
+.vercel
+.netlify
+.serverless
+Thumbs.db
