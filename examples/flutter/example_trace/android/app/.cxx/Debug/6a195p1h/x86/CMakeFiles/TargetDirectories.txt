@@ -1,0 +1,2 @@
+/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/.cxx/Debug/6a195p1h/x86/CMakeFiles/edit_cache.dir
+/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/.cxx/Debug/6a195p1h/x86/CMakeFiles/rebuild_cache.dir

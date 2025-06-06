@@ -1,0 +1,1 @@
+/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/app/intermediates/cxx/Debug/6a195p1h/obj/x86_64

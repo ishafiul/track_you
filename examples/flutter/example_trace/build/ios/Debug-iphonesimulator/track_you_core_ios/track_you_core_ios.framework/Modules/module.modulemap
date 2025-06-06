@@ -1,0 +1,11 @@
+framework module track_you_core_ios {
+  umbrella header "track_you_core_ios-umbrella.h"
+
+  export *
+  module * { export * }
+}
+
+module track_you_core_ios.Swift {
+  header "track_you_core_ios-Swift.h"
+  requires objc
+}
