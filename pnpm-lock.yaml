@@ -232,6 +232,9 @@ importers:
       drizzle-kit:
         specifier: 'catalog:'
         version: 0.31.1
+      location-worker:
+        specifier: workspace:*
+        version: link:../workers/location
       mail-worker:
         specifier: workspace:*
         version: link:../workers/mail

@@ -9,6 +9,7 @@ import contentManagerRoute from "./module/contenetManager/route";
 import authRoute from "./module/auth/route";
 import userRoute from "./module/user/route";
 import permissionRoute from "./module/permission/route";
+import locationRoute from "./module/location/route";
 
 const app = new OpenAPIHono<HonoTypes>();
 app.use(logger())
@@ -53,6 +54,7 @@ authRoute(app)
 userRoute(app)
 permissionRoute(app)
 contentManagerRoute(app)
+locationRoute(app)
 
 
 app.onError(async (err, c) => {

@@ -41,7 +41,7 @@ export class Location extends RpcTarget {
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 			});
-			
+
 			return { success: true, result };
 		} catch (error) {
 			console.error("Error inserting location:", error);
@@ -56,7 +56,7 @@ export class Location extends RpcTarget {
 				.from(locations)
 				.where(eq(locations.userId, userId))
 				.orderBy(locations.timestamp);
-			
+
 			return { success: true, locations: userLocations };
 		} catch (error) {
 			console.error("Error fetching locations:", error);
