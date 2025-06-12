@@ -4,12 +4,12 @@
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
+		"dev": "dotenvx run -f .env -- wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
 		"cf-typegen": "wrangler types",
-		"generate": "npx drizzle-kit generate",
-		"migrate": "npx drizzle-kit migrate"
+		"migration:generate": "drizzle-kit generate",
+		"migration:push:local": "dotenvx run -f .env -- drizzle-kit push"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "catalog:",

@@ -1,32 +1,27 @@
-import { sql } from 'drizzle-orm/sql';
-import {
-	sqliteTable,
-	text,
-} from 'drizzle-orm/sqlite-core';
-import {createInsertSchema, createSelectSchema, createUpdateSchema} from 'drizzle-zod';
+import {pgTable, text} from 'drizzle-orm/pg-core';
+import { z } from '@hono/zod-openapi'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 
-
-export const users = sqliteTable(
-	'users',
+export const locations = pgTable(
+	'locations',
 	{
 		id: text('id').primaryKey(),
-		email: text('email').notNull().unique(),
-		firstName: text('first_name'),
-		lastName: text('last_name'),
-		phone: text('phone'),
-		address: text('address'),
-		city: text('city'),
-		state: text('state'),
-		zip: text('zip'),
-		country: text('country'),
-		avatar: text('avatar'),
-		role: text('role',{ enum: ['user', 'admin'] }).notNull().default('user'),
-		createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-		updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`)
+		latitude: text('latitude').notNull(),
+		longitude: text('longitude').notNull(),
+		altitude: text('altitude').notNull(),
+		accuracy: text('accuracy').notNull(),
+		bearing: text('bearing').notNull(),
+		timestamp: text('timestamp').notNull(),
+		userId: text('user_id').notNull(),
+		subscriptionId: text('subscription_id').notNull(),
+		createdAt: text('created_at').notNull().default(new Date().toISOString()),
+		updatedAt: text('updated_at').notNull().default(new Date().toISOString()),
 	},
 );
-export const insertUsersSchema = createInsertSchema(users);
-export const selectUsersSchema = createSelectSchema(users);
-export const updateUsersSchema = createUpdateSchema(users);
+
+export const insertLocationsSchema = createInsertSchema(locations);
+export const selectLocationsSchema = createSelectSchema(locations);
+export type SelectLocation = z.infer<typeof selectLocationsSchema>;
+
 
 

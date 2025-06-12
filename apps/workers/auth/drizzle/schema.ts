@@ -5,7 +5,6 @@ import {
 	text,
 } from 'drizzle-orm/sqlite-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import {UserSchema} from "../../user/src/entity/user";
 import { z } from '@hono/zod-openapi'
 
 export const otps = sqliteTable(

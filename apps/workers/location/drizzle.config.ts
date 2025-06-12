@@ -4,9 +4,8 @@ require("dotenv").config();
 export default {
 	schema: "./drizzle/schema.ts",
 	out: "./drizzle/migrations",
-	dialect: "turso",
+	dialect: 'postgresql',
 	dbCredentials: {
-		url: process.env.TURSO_URL!,
-		authToken: process.env.TURSO_AUTH_TOKEN,
+		url: process.env.POSTGRES_CONNECTION_STRING!,
 	},
 } satisfies Config;

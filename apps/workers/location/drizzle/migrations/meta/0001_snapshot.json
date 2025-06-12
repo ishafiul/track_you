@@ -1,6 +1,6 @@
 {
-  "id": "56559d10-46de-40a9-8936-21bacce39bcd",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "d2e1710e-6d50-43a7-b350-093c26dae4a7",
+  "prevId": "56559d10-46de-40a9-8936-21bacce39bcd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -67,14 +67,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'2025-06-12T05:47:20.402Z'"
+          "default": "'2025-06-12T05:59:16.222Z'"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'2025-06-12T05:47:20.403Z'"
+          "default": "'2025-06-12T05:59:16.223Z'"
         }
       },
       "indexes": {},
