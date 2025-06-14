@@ -28,8 +28,9 @@ export class Location extends RpcTarget {
 
 	async insertLocation(locationData: LocationData) {
 		try {
-			const result = await this.db.insert(locations).values({
-				id: uuidv4(),
+			const id = uuidv4();
+			await this.db.insert(locations).values({
+				id: id,
 				latitude: locationData.latitude,
 				longitude: locationData.longitude,
 				altitude: locationData.altitude,
@@ -42,7 +43,7 @@ export class Location extends RpcTarget {
 				updatedAt: new Date().toISOString(),
 			});
 
-			return { success: true, result };
+			return { success: true, id };
 		} catch (error) {
 			console.error("Error inserting location:", error);
 			return { success: false, error: (error as Error).message };

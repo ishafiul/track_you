@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
-
+import { v4 as uuidv4 } from 'uuid';
 // Response schema for a location item
 const LocationItemSchema = z.object({
   id: z.string(),
@@ -30,7 +30,6 @@ export default (app: HonoApp) =>
       path: "/location/get",
       tags: ["Location"],
       description: "Endpoint to get user's location data",
-      security: [{ bearerAuth: [] }],
       responses: {
         200: {
           description: "User's location data",
@@ -54,15 +53,12 @@ export default (app: HonoApp) =>
     }),
     async (c: HonoContext) => {
       // Check if user is authenticated
-      if (!c.var.user || !c.var.user.id) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
 
       const locationService = await c.env.LOCATION_SERVICE.newLocation();
-      const userId = c.var.user.id;
+      const userId =uuidv4();
 
       const result = await locationService.getLocationsByUserId(userId);
-      
+
       if (!result.success) {
         throw new HTTPException(500, { message: result.error || "Failed to fetch location data" });
       }

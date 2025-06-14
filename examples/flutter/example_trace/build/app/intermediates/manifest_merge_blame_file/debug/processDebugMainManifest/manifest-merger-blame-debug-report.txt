@@ -12,20 +12,20 @@
 12         to allow setting breakpoints, to provide hot reload, etc.
 13    -->
 14    <uses-permission android:name="android.permission.INTERNET" />
-14-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:5:5-66
-14-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:5:22-64
+14-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:5:5-66
+14-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:5:22-64
 15    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-15-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:2:5-79
-15-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:2:22-76
+15-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:2:5-79
+15-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:2:22-76
 16    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-16-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:3:5-81
-16-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:3:22-78
+16-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:3:5-81
+16-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:3:22-78
 17    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-17-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:4:5-85
-17-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:4:22-82
+17-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:4:5-85
+17-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:4:22-82
 18    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-18-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:5:5-77
-18-->/Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:5:22-74
+18-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:5:5-77
+18-->/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:5:22-74
 19
 20    <permission
 20-->[androidx.core:core:1.13.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/5fab41a2dab752064b1b204230c6e63e/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
@@ -80,15 +80,15 @@
 64            android:value="2" />
 65
 66        <service
-66-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:13:9-17:56
+66-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:13:9-17:56
 67            android:name="com.example.verygoodcore.TrackYouCorePlugin$LocationService"
-67-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:14:13-87
+67-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:14:13-87
 68            android:enabled="true"
-68-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:15:13-35
+68-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:15:13-35
 69            android:exported="false"
-69-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:16:13-37
+69-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:16:13-37
 70            android:foregroundServiceType="location" />
-70-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:17:13-53
+70-->[:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:17:13-53
 71
 72        <uses-library
 72-->[androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:23:9-25:40

@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_answer_low.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_answer_low.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_decline.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_decline.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_answer_video.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_answer_video.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_answer_video_low.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_answer_video_low.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_answer.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_answer.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/drawable-anydpi-v21/ic_call_decline_low.xml",
+        "source": "dev.flutter.integration_test-core-1.13.1-11:/drawable-anydpi-v21/ic_call_decline_low.xml"
+    }
+]

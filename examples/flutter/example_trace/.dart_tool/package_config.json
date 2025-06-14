@@ -68,6 +68,18 @@
       "languageVersion": "3.7"
     },
     {
+      "name": "http",
+      "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/http-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "http_parser",
+      "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/http_parser-4.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "integration_test",
       "rootUri": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/integration_test",
       "packageUri": "lib/",
@@ -206,6 +218,12 @@
       "languageVersion": "3.5"
     },
     {
+      "name": "typed_data",
+      "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/typed_data-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
       "name": "vector_math",
       "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/vector_math-2.1.4",
       "packageUri": "lib/",
@@ -224,6 +242,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "web",
+      "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/web-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "webdriver",
       "rootUri": "file:///Users/shafiulislam/.pub-cache/hosted/pub.dev/webdriver-3.0.4",
       "packageUri": "lib/",
@@ -236,7 +260,7 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2025-06-06T06:16:46.731879Z",
+  "generated": "2025-06-12T07:03:38.274790Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable",

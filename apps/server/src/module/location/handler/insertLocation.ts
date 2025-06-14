@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
-
+import { v4 as uuidv4 } from 'uuid';
 // Schema for location data
 const InsertLocationSchema = z.object({
   latitude: z.string().min(1),
@@ -26,7 +26,6 @@ export default (app: HonoApp) =>
       path: "/location/insert",
       tags: ["Location"],
       description: "Endpoint to insert a new location",
-      security: [{ bearerAuth: [] }],
       request: {
         body: {
           content: {
@@ -64,10 +63,7 @@ export default (app: HonoApp) =>
       },
     }),
     async (c: HonoContext) => {
-      // Check if user is authenticated
-      if (!c.var.user || !c.var.user.id) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
+
 
       const locationService = await c.env.LOCATION_SERVICE.newLocation();
       const bodyJson = await c.req.json();
@@ -76,11 +72,11 @@ export default (app: HonoApp) =>
       // Add user ID to location data
       const locationData = {
         ...body,
-        userId: c.var.user.id,
+        userId: uuidv4(),
       };
 
       const result = await locationService.insertLocation(locationData);
-      
+
       if (!result.success) {
         throw new HTTPException(500, { message: result.error || "Failed to insert location" });
       }

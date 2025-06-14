@@ -1,0 +1,1 @@
+/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/cxx/RelWithDebInfo/3t6y2fa5/obj/x86

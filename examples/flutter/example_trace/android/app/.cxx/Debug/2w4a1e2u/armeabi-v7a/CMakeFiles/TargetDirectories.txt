@@ -1,0 +1,2 @@
+/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/.cxx/Debug/2w4a1e2u/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/.cxx/Debug/2w4a1e2u/armeabi-v7a/CMakeFiles/rebuild_cache.dir

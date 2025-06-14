@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 application
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:7:5-37:19
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:12:5-18:19
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:12:5-18:19
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:7:5-37:19
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:12:5-18:19
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:12:5-18:19
 MERGED from [androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:22:5-29:19
 MERGED from [androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:22:5-29:19
 MERGED from [androidx.core:core:1.13.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/5fab41a2dab752064b1b204230c6e63e/transformed/core-1.13.1/AndroidManifest.xml:28:5-89
@@ -17,19 +17,19 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/shafiulislam/.gradle
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8559e0f94b2388cb1bbc65394b6d5dfe/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8559e0f94b2388cb1bbc65394b6d5dfe/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 	android:extractNativeLibs
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/5fab41a2dab752064b1b204230c6e63e/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
 	android:name
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml
 manifest
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:1:1-38:12
-MERGED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:1:1-38:12
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-20:12
-MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:1-12:12
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:1:1-38:12
+MERGED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:1:1-38:12
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:1:1-6:12
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-20:12
+MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:1-12:12
 MERGED from [androidx.fragment:fragment:1.7.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/36cefcea946d50f69eee08cb6cee98f7/transformed/fragment-1.7.1/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:17:1-31:12
 MERGED from [androidx.window:window-java:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/af80e1d4a7e7f333788a0ce7b2104d14/transformed/jetified-window-java-1.2.0/AndroidManifest.xml:17:1-21:12
@@ -62,49 +62,49 @@ MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/shafiulis
 MERGED from [androidx.test.espresso:espresso-idling-resource:3.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/20d706c2f81c19106ba71b9ac1d99a4b/transformed/espresso-idling-resource-3.2.0/AndroidManifest.xml:17:1-24:12
 MERGED from [com.getkeepsafe.relinker:relinker:1.4.5] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/e0ba1185a15464fbbf4c7b31803dfbec/transformed/jetified-relinker-1.4.5/AndroidManifest.xml:2:1-7:12
 	package
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 	android:versionName
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 	android:versionCode
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 	xmlns:android
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:1:11-69
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:1:11-69
 uses-permission#android.permission.ACCESS_FINE_LOCATION
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:2:5-79
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:5-79
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:5-79
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:2:5-79
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:5-79
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:7:5-79
 	android:name
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:2:22-76
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:2:22-76
 uses-permission#android.permission.ACCESS_COARSE_LOCATION
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:3:5-81
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-81
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-81
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:3:5-81
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-81
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-81
 	android:name
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:3:22-78
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:3:22-78
 uses-permission#android.permission.ACCESS_BACKGROUND_LOCATION
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:4:5-85
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:9:5-85
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:9:5-85
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:4:5-85
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:9:5-85
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:9:5-85
 	android:name
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:4:22-82
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:4:22-82
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:5:5-77
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-77
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-77
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:5:5-77
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-77
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-77
 	android:name
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/main/AndroidManifest.xml:5:22-74
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/main/AndroidManifest.xml:5:22-74
 uses-permission#android.permission.INTERNET
-ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:5:5-66
+ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:5:5-66
 	android:name
-		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml:5:22-64
+		ADDED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml:5:22-64
 uses-sdk
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
-INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
-MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
-MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-44
-MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-44
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
+INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
+MERGED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
+MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-44
+MERGED from [:integration_test] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/integration_test/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:10:5-44
 MERGED from [androidx.fragment:fragment:1.7.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/36cefcea946d50f69eee08cb6cee98f7/transformed/fragment-1.7.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.fragment:fragment:1.7.1] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/36cefcea946d50f69eee08cb6cee98f7/transformed/fragment-1.7.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:20:5-44
@@ -168,19 +168,19 @@ MERGED from [androidx.test.espresso:espresso-idling-resource:3.2.0] /Users/shafi
 MERGED from [com.getkeepsafe.relinker:relinker:1.4.5] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/e0ba1185a15464fbbf4c7b31803dfbec/transformed/jetified-relinker-1.4.5/AndroidManifest.xml:5:5-43
 MERGED from [com.getkeepsafe.relinker:relinker:1.4.5] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/e0ba1185a15464fbbf4c7b31803dfbec/transformed/jetified-relinker-1.4.5/AndroidManifest.xml:5:5-43
 	android:targetSdkVersion
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/android/app/src/debug/AndroidManifest.xml
+		INJECTED from /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/android/app/src/debug/AndroidManifest.xml
 service#com.example.verygoodcore.TrackYouCorePlugin$LocationService
-ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:13:9-17:56
+ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:13:9-17:56
 	android:enabled
-		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:15:13-35
+		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:15:13-35
 	android:exported
-		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:16:13-37
+		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:16:13-37
 	android:foregroundServiceType
-		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:17:13-53
+		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:17:13-53
 	android:name
-		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:14:13-87
+		ADDED from [:track_you_core_android] /Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/track_you_core_android/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:14:13-87
 uses-library#androidx.window.extensions
 ADDED from [androidx.window:window:1.2.0] /Users/shafiulislam/.gradle/caches/8.11.1/transforms/8040f5560b423e8547d1e357d63b0505/transformed/jetified-window-1.2.0/AndroidManifest.xml:23:9-25:40
 	android:required

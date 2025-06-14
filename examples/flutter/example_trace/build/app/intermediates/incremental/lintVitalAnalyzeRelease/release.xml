@@ -1,0 +1,37 @@
+<variant
+    name="release"
+    package="com.example.verygoodcore.example"
+    minSdkVersion="21"
+    targetSdkVersion="35"
+    shrinking="true"
+    mergedManifest="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml"
+    proguardFiles="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/default_proguard_files/global/proguard-android-optimize.txt-8.9.1:/Users/shafiulislam/.asdf/installs/flutter/3.29.3-stable/packages/flutter_tools/gradle/flutter_proguard_rules.pro:proguard-rules.pro"
+    partialResultsDir="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/lint_vital_partial_results/release/lintVitalAnalyzeRelease/out"
+    desugaredMethodsFiles="/Users/shafiulislam/.gradle/caches/8.11.1/transforms/f343e5dde83a3d1e369ba69d9e966d9a/transformed/D8BackportedDesugaredMethods.txt">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+    <sourceProvider
+        manifests="src/main/AndroidManifest.xml"
+        javaDirectories="src/main/java:src/main/kotlin:src/release/java:src/release/kotlin"
+        resDirectories="src/main/res:src/release/res"
+        assetsDirectories="src/main/assets:src/release/assets"/>
+  </sourceProviders>
+  <testSourceProviders>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <manifestPlaceholders>
+    <placeholder
+        name="applicationName"
+        value="android.app.Application" />
+  </manifestPlaceholders>
+  <artifact
+      classOutputs="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/javac/release/compileReleaseJavaWithJavac/classes:/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/tmp/kotlin-classes/release:/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/kotlinToolingMetadata:/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/intermediates/compile_and_runtime_not_namespaced_r_class_jar/release/processReleaseResources/R.jar"
+      type="MAIN"
+      applicationId="com.example.verygoodcore.example"
+      generatedSourceFolders="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/generated/ap_generated_sources/release/out"
+      generatedResourceFolders="/Users/shafiulislam/StudioProjects/track_you/examples/flutter/example_trace/build/app/generated/res/resValues/release"
+      desugaredMethodsFiles="/Users/shafiulislam/.gradle/caches/8.11.1/transforms/f343e5dde83a3d1e369ba69d9e966d9a/transformed/D8BackportedDesugaredMethods.txt">
+  </artifact>
+</variant>

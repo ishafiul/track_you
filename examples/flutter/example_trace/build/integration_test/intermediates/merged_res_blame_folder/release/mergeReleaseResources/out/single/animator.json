@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_fade_exit.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_fade_exit.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_open_enter.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_open_enter.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_fade_enter.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_fade_enter.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_open_exit.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_open_exit.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_close_exit.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_close_exit.xml"
+    },
+    {
+        "merged": "dev.flutter.integration_test-release-25:/animator/fragment_close_enter.xml",
+        "source": "dev.flutter.integration_test-fragment-1.7.1-6:/animator/fragment_close_enter.xml"
+    }
+]
