@@ -1,35 +1,24 @@
 ---
-interface Props {
-  title: string;
-}
-import "../styles/global.css";
+import '../styles/global.css';
 
-const { title } = Astro.props;
+interface Props {
+  title?: string;
+}
+
+const { title = 'Track You App' } = Astro.props;
 ---
 
-<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title} | Astro App</title>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
   </head>
   <body>
-    <header>
-      <nav>
-        <div class="container">
-          <a href="/">Home</a>
-          <a href="/login">Login</a>
-        </div>
-      </nav>
-    </header>
-    <main class="container">
+    <main>
       <slot />
     </main>
-    <footer>
-      <div class="container">
-        <p>&copy; 2023 My Astro App</p>
-      </div>
-    </footer>
   </body>
 </html>
