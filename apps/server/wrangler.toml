@@ -8,7 +8,8 @@ services = [
   { binding = "EMAIL_SERVICE", service = "portfolio-mail", entrypoint = "EmailService" },
   { binding = "USER_SERVICE", service = "portfolio-user", entrypoint = "UserService" },
   { binding = "PERMISSION_MANAGER", service = "permission-manager", entrypoint = "PermissionService" },
-  { binding = "LOCATION_SERVICE", service = "track-you-location", entrypoint = "LocationService" }
+  { binding = "LOCATION_SERVICE", service = "track-you-location", entrypoint = "LocationService" },
+  { binding = "BILLING_SERVICE", service = "track-you-billing", entrypoint = "BillingService" },
 ]
 
 [vars]

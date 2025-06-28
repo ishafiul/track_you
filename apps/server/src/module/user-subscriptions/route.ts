@@ -13,10 +13,14 @@ import renewSubscription from "./handler/renewSubscription";
 import subscribeUserToPlan from "./handler/subscribeUserToPlan";
 import updateUserSubscription from "./handler/updateUserSubscription";
 import upgradePlan from "./handler/upgradePlan";
+import initiateSubscription from "./handler/initiateSubscription";
+import stripeWebhook from "./handler/stripeWebhook";
 
 
 export default function userSubscriptionsRoute(app: HonoApp) {
   createUserSubscription(app);
+  initiateSubscription(app);
+  stripeWebhook(app);
   getUserSubscription(app);
   getUserSubscriptions(app);
   getUserActiveSubscription(app);

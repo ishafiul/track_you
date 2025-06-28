@@ -13,7 +13,7 @@ export default (app: HonoApp) =>
       method: "delete",
       path: "/subscription-plans/{id}",
       tags: ["Subscription Plans"],
-      description: "Delete a subscription plan",
+      description: "Delete a subscription plan and archive it in Stripe",
       request: {
         params: z.object({
           id: z.string().min(1),
@@ -22,6 +22,12 @@ export default (app: HonoApp) =>
       responses: {
         200: {
           description: "Subscription plan deleted successfully",
+          content: {
+            "application/json": { schema: DeleteSubscriptionPlanResponseSchema },
+          },
+        },
+        400: {
+          description: "Bad request - plan has active subscriptions",
           content: {
             "application/json": { schema: DeleteSubscriptionPlanResponseSchema },
           },
@@ -39,14 +45,25 @@ export default (app: HonoApp) =>
         const { id } = c.req.param();
         const billingService = await c.env.BILLING_SERVICE.billing();
 
-        await billingService.deleteSubscriptionPlan(id);
+        // Use the new Stripe-aware delete method
+        const result = await billingService.deleteSubscriptionPlanWithStripe(id);
+
+        if (!result.success) {
+          return c.json({
+            success: false,
+            message: result.error || "Failed to delete subscription plan"
+          }, 400);
+        }
 
         return c.json({
           success: true,
-          message: "Subscription plan deleted successfully"
+          message: "Subscription plan deleted successfully and archived in Stripe"
         }, 200);
       } catch (error) {
-        throw new HTTPException(500, { message: "Failed to delete subscription plan" });
+        console.error("Error deleting subscription plan:", error);
+        return c.json({
+          message: error instanceof Error ? error.message : "Failed to delete subscription plan"
+        }, 500);
       }
     }
   ); 

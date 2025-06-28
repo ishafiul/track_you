@@ -30,6 +30,10 @@ export class UserSubscriptionsRepository {
 		return result;
 	}
 
+	async findAll(): Promise<SelectUserSubscription[]> {
+		return await this.db.select().from(userSubscriptions);
+	}
+
 	async findByUserId(userId: string): Promise<SelectUserSubscription[]> {
 		return await this.db
 			.select()

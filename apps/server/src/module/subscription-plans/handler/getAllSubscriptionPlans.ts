@@ -2,18 +2,31 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
 
-// Response schema
+// Plan pricing schema
+const PlanPricingSchema = z.object({
+  id: z.string(),
+  planId: z.string(),
+  billingCycle: z.enum(['monthly', 'yearly']),
+  price: z.number(),
+  stripePriceId: z.string().nullable(),
+  active: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+// Response schema - updated to match new structure
 const SubscriptionPlanSchema = z.object({
   id: z.string(),
   name: z.string(),
-  price: z.number(),
-  billingCycle: z.enum(['monthly', 'yearly']),
+  description: z.string().nullable(),
   featuresJson: z.string(),
   apiRateLimit: z.number(),
   maxRequestsPerMonth: z.number(),
   active: z.boolean(),
+  stripeProductId: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  pricing: z.array(PlanPricingSchema).optional(),
 }).openapi("SubscriptionPlan");
 
 const GetAllSubscriptionPlansResponseSchema = z.object({
@@ -27,7 +40,7 @@ export default (app: HonoApp) =>
       method: "get",
       path: "/subscription-plans",
       tags: ["Subscription Plans"],
-      description: "Get all subscription plans",
+      description: "Get all subscription plans with pricing information",
       responses: {
         200: {
           description: "Subscription plans retrieved successfully",
@@ -46,26 +59,16 @@ export default (app: HonoApp) =>
     async (c: HonoContext) => {
       try {
         const billingService = await c.env.BILLING_SERVICE.billing();
-        const plans = await billingService.getAllSubscriptionPlans();
+        const plansWithPricing = await billingService.getAllSubscriptionPlansWithPricing();
 
         const response = {
           success: true as const,
-          plans: (plans || []).map(plan => ({
-            id: plan.id,
-            name: plan.name,
-            price: plan.price,
-            billingCycle: plan.billingCycle as 'monthly' | 'yearly',
-            featuresJson: plan.featuresJson,
-            apiRateLimit: plan.apiRateLimit,
-            maxRequestsPerMonth: plan.maxRequestsPerMonth,
-            active: plan.active,
-            createdAt: plan.createdAt,
-            updatedAt: plan.updatedAt,
-          }))
+          plans: plansWithPricing || []
         };
 
         return c.json(response, 200);
       } catch (error) {
+        console.error('Error getting subscription plans:', error);
         throw new HTTPException(500, { message: "Failed to get subscription plans" });
       }
     }

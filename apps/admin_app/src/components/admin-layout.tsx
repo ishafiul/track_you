@@ -111,8 +111,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             },
             {
               key: 'users',
-              icon: <CalendarOutlined />,
+              icon: <UserOutlined />,
               label: <Link href="/users">Users</Link>,
+            },
+            {
+              key: 'subscriptions',
+              icon: <DollarOutlined />,
+              label: <Link href="/subscriptions">Subscriptions</Link>,
             }
           ]}
         />

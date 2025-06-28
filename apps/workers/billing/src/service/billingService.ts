@@ -4,6 +4,8 @@ import {drizzle, LibSQLDatabase } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import { SubscriptionPlansRepository } from "../repository/subscription-plans.repository";
 import { UserSubscriptionsRepository } from "../repository/user-subscriptions.repository";
+import { PlanPricingRepository } from "../repository/planPricing.repository";
+import { StripeService } from "./stripeService";
 import { getDb } from "../utils/getDb";
 import type { z } from 'zod';
 import { 
@@ -12,7 +14,10 @@ import {
 	updateSubscriptionPlansSchema,
 	insertUserSubscriptionsSchema,
 	selectUserSubscriptionsSchema,
-	updateUserSubscriptionsSchema
+	updateUserSubscriptionsSchema,
+	insertPlanPricingSchema,
+	selectPlanPricingSchema,
+	updatePlanPricingSchema
 } from '../../drizzle/schema';
 
 type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlansSchema>;
@@ -21,12 +26,17 @@ type UpdateSubscriptionPlan = z.infer<typeof updateSubscriptionPlansSchema>;
 type InsertUserSubscription = z.infer<typeof insertUserSubscriptionsSchema>;
 type SelectUserSubscription = z.infer<typeof selectUserSubscriptionsSchema>;
 type UpdateUserSubscription = z.infer<typeof updateUserSubscriptionsSchema>;
+type InsertPlanPricing = z.infer<typeof insertPlanPricingSchema>;
+type SelectPlanPricing = z.infer<typeof selectPlanPricingSchema>;
+type UpdatePlanPricing = z.infer<typeof updatePlanPricingSchema>;
 
 export class Billing extends RpcTarget {
 	#env: Bindings;
 	private readonly db: LibSQLDatabase;
 	private readonly subscriptionPlansRepository: SubscriptionPlansRepository;
 	private readonly userSubscriptionsRepository: UserSubscriptionsRepository;
+	private readonly planPricingRepository: PlanPricingRepository;
+	private readonly stripeService: StripeService;
 
 	constructor(env: Bindings) {
 		super();
@@ -34,6 +44,33 @@ export class Billing extends RpcTarget {
 		this.db = getDb(env);
 		this.subscriptionPlansRepository = new SubscriptionPlansRepository(this.db);
 		this.userSubscriptionsRepository = new UserSubscriptionsRepository(this.db);
+		this.planPricingRepository = new PlanPricingRepository(this.db);
+		this.stripeService = new StripeService(env.STRIPE_SECRET_KEY);
+	}
+
+	// Plan Pricing Methods
+	async createPlanPricing(pricingData: InsertPlanPricing): Promise<SelectPlanPricing> {
+		return await this.planPricingRepository.create(pricingData);
+	}
+
+	async getPlanPricing(id: string): Promise<SelectPlanPricing | null> {
+		return await this.planPricingRepository.findById(id);
+	}
+
+	async getPlanPricingByPlan(planId: string): Promise<SelectPlanPricing[]> {
+		return await this.planPricingRepository.findByPlanId(planId);
+	}
+
+	async getPlanPricingByPlanAndCycle(planId: string, billingCycle: 'monthly' | 'yearly'): Promise<SelectPlanPricing | null> {
+		return await this.planPricingRepository.findByPlanAndCycle(planId, billingCycle);
+	}
+
+	async updatePlanPricing(id: string, updateData: Partial<UpdatePlanPricing>): Promise<SelectPlanPricing | null> {
+		return await this.planPricingRepository.update(id, updateData);
+	}
+
+	async deletePlanPricing(id: string): Promise<void> {
+		await this.planPricingRepository.delete(id);
 	}
 
 	// Subscription Plans Methods
@@ -48,6 +85,21 @@ export class Billing extends RpcTarget {
 
 	async getAllSubscriptionPlans(): Promise<SelectSubscriptionPlan[]> {
 		return await this.subscriptionPlansRepository.findAll();
+	}
+
+	async getAllSubscriptionPlansWithPricing(): Promise<(SelectSubscriptionPlan & { pricing: SelectPlanPricing[] })[]> {
+		const plans = await this.subscriptionPlansRepository.findAll();
+		const plansWithPricing = [];
+		
+		for (const plan of plans) {
+			const pricing = await this.planPricingRepository.findByPlanId(plan.id);
+			plansWithPricing.push({
+				...plan,
+				pricing: pricing || []
+			});
+		}
+		
+		return plansWithPricing;
 	}
 
 	async getActiveSubscriptionPlans(): Promise<SelectSubscriptionPlan[]> {
@@ -66,6 +118,67 @@ export class Billing extends RpcTarget {
 
 	async deleteSubscriptionPlan(id: string): Promise<void> {
 		await this.subscriptionPlansRepository.delete(id);
+	}
+
+	// Delete subscription plan with Stripe cleanup
+	async deleteSubscriptionPlanWithStripe(id: string): Promise<{
+		success: boolean;
+		error?: string;
+	}> {
+		try {
+			// Get the plan first to get Stripe IDs
+			const plan = await this.subscriptionPlansRepository.findById(id);
+			if (!plan) {
+				return { success: false, error: 'Subscription plan not found' };
+			}
+
+			// Check if there are any active subscriptions using this plan
+			const activeSubscriptions = await this.userSubscriptionsRepository.findByPlanId(id);
+			const hasActiveSubscriptions = activeSubscriptions.some(sub => 
+				sub.status === 'active' || sub.status === 'trialing'
+			);
+
+			if (hasActiveSubscriptions) {
+				return { 
+					success: false, 
+					error: 'Cannot delete plan with active subscriptions. Cancel all subscriptions first.' 
+				};
+			}
+
+			// Get all pricing for this plan and archive Stripe prices
+			const planPricing = await this.planPricingRepository.findByPlanId(id);
+			for (const pricing of planPricing) {
+				if (pricing.stripePriceId) {
+					try {
+						// Archive the price in Stripe
+						await this.stripeService.archivePrice(pricing.stripePriceId);
+					} catch (stripeError) {
+						console.warn('Failed to archive Stripe price:', stripeError);
+					}
+				}
+			}
+
+			// Archive the Stripe product if it exists
+			if (plan.stripeProductId) {
+				try {
+					await this.stripeService.archiveProduct(plan.stripeProductId);
+				} catch (stripeError) {
+					console.warn('Failed to archive Stripe product:', stripeError);
+				}
+			}
+
+			// Delete pricing first (due to foreign key constraint)
+			await this.planPricingRepository.deleteByPlanId(id);
+			
+			// Delete the plan
+			await this.subscriptionPlansRepository.delete(id);
+			
+			return { success: true };
+		} catch (error) {
+			console.error('Error deleting subscription plan:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to delete subscription plan';
+			return { success: false, error: errorMessage };
+		}
 	}
 
 	// User Subscriptions Methods
@@ -115,7 +228,13 @@ export class Billing extends RpcTarget {
 	}
 
 	// Business Logic Methods
-	async subscribeUserToPlan(userId: string, planId: string, periodStart: string, periodEnd: string): Promise<{
+	async subscribeUserToPlan(
+		userId: string, 
+		planId: string, 
+		billingCycle: 'monthly' | 'yearly',
+		periodStart: string, 
+		periodEnd: string
+	): Promise<{
 		success: boolean;
 		subscription?: SelectUserSubscription;
 		error?: string;
@@ -130,6 +249,15 @@ export class Billing extends RpcTarget {
 				return { success: false, error: 'Subscription plan is not active' };
 			}
 
+			// Check if pricing exists for the billing cycle
+			const pricing = await this.planPricingRepository.findByPlanAndCycle(planId, billingCycle);
+			if (!pricing) {
+				return { success: false, error: `Pricing not found for ${billingCycle} billing cycle` };
+			}
+			if (!pricing.active) {
+				return { success: false, error: `${billingCycle} pricing is not active` };
+			}
+
 			// Check if user already has an active subscription
 			const existingSubscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
 			if (existingSubscription) {
@@ -141,6 +269,7 @@ export class Billing extends RpcTarget {
 				id: crypto.randomUUID(),
 				userId,
 				planId,
+				billingCycle,
 				status: 'active',
 				currentPeriodStart: periodStart,
 				currentPeriodEnd: periodEnd,
@@ -152,37 +281,48 @@ export class Billing extends RpcTarget {
 			const subscription = await this.userSubscriptionsRepository.create(subscriptionData);
 			return { success: true, subscription };
 		} catch (error) {
-			return { success: false, error: 'Failed to create subscription' };
+			console.error('Error subscribing user to plan:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe user to plan';
+			return { success: false, error: errorMessage };
 		}
 	}
 
-	async upgradePlan(userId: string, newPlanId: string): Promise<{
+	async upgradePlan(userId: string, newPlanId: string, newBillingCycle: 'monthly' | 'yearly'): Promise<{
 		success: boolean;
 		subscription?: SelectUserSubscription;
 		error?: string;
 	}> {
 		try {
-			// Get current active subscription
-			const currentSubscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
-			if (!currentSubscription) {
-				return { success: false, error: 'No active subscription found' };
-			}
-
 			// Check if new plan exists and is active
 			const newPlan = await this.subscriptionPlansRepository.findById(newPlanId);
 			if (!newPlan || !newPlan.active) {
 				return { success: false, error: 'New subscription plan not found or inactive' };
 			}
 
-			// Update subscription to new plan
-			const updatedSubscription = await this.userSubscriptionsRepository.update(
-				currentSubscription.id,
-				{ planId: newPlanId }
-			);
+			// Check if pricing exists for the new billing cycle
+			const newPricing = await this.planPricingRepository.findByPlanAndCycle(newPlanId, newBillingCycle);
+			if (!newPricing || !newPricing.active) {
+				return { success: false, error: `Pricing not found for ${newBillingCycle} billing cycle` };
+			}
 
-			return { success: true, subscription: updatedSubscription };
+			// Get current subscription
+			const currentSubscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
+			if (!currentSubscription) {
+				return { success: false, error: 'No active subscription found for user' };
+			}
+
+			// Update subscription
+			const updatedSubscription = await this.userSubscriptionsRepository.update(currentSubscription.id, {
+				planId: newPlanId,
+				billingCycle: newBillingCycle,
+				updatedAt: new Date().toISOString()
+			});
+
+			return { success: true, subscription: updatedSubscription || undefined };
 		} catch (error) {
-			return { success: false, error: 'Failed to upgrade subscription' };
+			console.error('Error upgrading plan:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to upgrade plan';
+			return { success: false, error: errorMessage };
 		}
 	}
 
@@ -197,19 +337,18 @@ export class Billing extends RpcTarget {
 				return { success: false, error: 'Subscription not found' };
 			}
 
-			const updatedSubscription = await this.userSubscriptionsRepository.update(
-				subscriptionId,
-				{
-					currentPeriodStart: subscription.currentPeriodEnd,
-					currentPeriodEnd: newPeriodEnd,
-					status: 'active',
-					cancelAtPeriodEnd: false
-				}
-			);
+			const updatedSubscription = await this.userSubscriptionsRepository.update(subscriptionId, {
+				currentPeriodEnd: newPeriodEnd,
+				status: 'active',
+				cancelAtPeriodEnd: false,
+				updatedAt: new Date().toISOString()
+			});
 
-			return { success: true, subscription: updatedSubscription };
+			return { success: true, subscription: updatedSubscription || undefined };
 		} catch (error) {
-			return { success: false, error: 'Failed to renew subscription' };
+			console.error('Error renewing subscription:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to renew subscription';
+			return { success: false, error: errorMessage };
 		}
 	}
 
@@ -217,23 +356,540 @@ export class Billing extends RpcTarget {
 		hasAccess: boolean;
 		subscription?: SelectUserSubscription;
 		plan?: SelectSubscriptionPlan;
+		pricing?: SelectPlanPricing;
 	}> {
-		const subscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
-		if (!subscription) {
+		try {
+			const subscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
+			if (!subscription) {
+				return { hasAccess: false };
+			}
+
+			const plan = await this.subscriptionPlansRepository.findById(subscription.planId);
+			if (!plan || !plan.active) {
+				return { hasAccess: false };
+			}
+
+			const pricing = await this.planPricingRepository.findByPlanAndCycle(subscription.planId, subscription.billingCycle);
+			if (!pricing || !pricing.active) {
+				return { hasAccess: false };
+			}
+
+			// Check if subscription is still valid
+			const now = new Date();
+			const periodEnd = new Date(subscription.currentPeriodEnd);
+			if (now > periodEnd && subscription.status !== 'active') {
+				return { hasAccess: false };
+			}
+
+			return { 
+				hasAccess: true, 
+				subscription, 
+				plan,
+				pricing
+			};
+		} catch (error) {
+			console.error('Error checking user access:', error);
 			return { hasAccess: false };
 		}
+	}
 
-		// Check if subscription is expired
-		const now = new Date().toISOString();
-		if (subscription.currentPeriodEnd < now) {
-			return { hasAccess: false, subscription };
+	// Stripe Integration Methods
+	async createSubscriptionPlanWithStripe(planData: {
+		name: string;
+		description?: string;
+		featuresJson: string;
+		apiRateLimit: number;
+		maxRequestsPerMonth: number;
+		monthlyPrice: number;
+		yearlyPrice: number;
+	}): Promise<{
+		success: boolean;
+		plan?: SelectSubscriptionPlan;
+		pricing?: SelectPlanPricing[];
+		error?: string;
+	}> {
+		try {
+			// Create Stripe product
+			const stripeProduct = await this.stripeService.createProduct({
+				name: planData.name,
+				description: planData.description || '',
+				metadata: {
+					apiRateLimit: planData.apiRateLimit.toString(),
+					maxRequestsPerMonth: planData.maxRequestsPerMonth.toString(),
+				}
+			});
+
+			// Create monthly price in Stripe
+			const monthlyStripePrice = await this.stripeService.createPrice({
+				productId: stripeProduct.id,
+				unitAmount: Math.round(planData.monthlyPrice * 100), // Convert to cents
+				currency: 'usd',
+				interval: 'month',
+				nickname: `${planData.name} - Monthly`
+			});
+
+			// Create yearly price in Stripe
+			const yearlyStripePrice = await this.stripeService.createPrice({
+				productId: stripeProduct.id,
+				unitAmount: Math.round(planData.yearlyPrice * 100), // Convert to cents
+				currency: 'usd',
+				interval: 'year',
+				nickname: `${planData.name} - Yearly`
+			});
+
+			// Generate plan ID
+			const planId = planData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+			// Create subscription plan
+			const plan = await this.subscriptionPlansRepository.create({
+				id: planId,
+				name: planData.name,
+				description: planData.description,
+				featuresJson: planData.featuresJson,
+				apiRateLimit: planData.apiRateLimit,
+				maxRequestsPerMonth: planData.maxRequestsPerMonth,
+				stripeProductId: stripeProduct.id,
+				active: true,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			});
+
+			// Create monthly pricing
+			const monthlyPricing = await this.planPricingRepository.create({
+				id: `${planId}-monthly`,
+				planId: plan.id,
+				billingCycle: 'monthly',
+				price: planData.monthlyPrice,
+				stripePriceId: monthlyStripePrice.id,
+				active: true,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			});
+
+			// Create yearly pricing
+			const yearlyPricing = await this.planPricingRepository.create({
+				id: `${planId}-yearly`,
+				planId: plan.id,
+				billingCycle: 'yearly',
+				price: planData.yearlyPrice,
+				stripePriceId: yearlyStripePrice.id,
+				active: true,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			});
+
+			return { 
+				success: true, 
+				plan, 
+				pricing: [monthlyPricing, yearlyPricing]
+			};
+		} catch (error) {
+			console.error('Error creating subscription plan with Stripe:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to create subscription plan';
+			return { success: false, error: errorMessage };
 		}
+	}
 
-		const plan = await this.subscriptionPlansRepository.findById(subscription.planId);
-		return { 
-			hasAccess: true, 
-			subscription, 
-			plan: plan || undefined 
-		};
+	async createPaymentLinkForPlan(planId: string, billingCycle: 'monthly' | 'yearly', successUrl: string, cancelUrl: string): Promise<{
+		success: boolean;
+		paymentLink?: string;
+		error?: string;
+	}> {
+		try {
+			const plan = await this.subscriptionPlansRepository.findById(planId);
+			if (!plan) {
+				return { success: false, error: 'Subscription plan not found' };
+			}
+
+			const pricing = await this.planPricingRepository.findByPlanAndCycle(planId, billingCycle);
+			if (!pricing || !pricing.stripePriceId) {
+				return { success: false, error: `Pricing not found for ${billingCycle} billing cycle` };
+			}
+
+			const paymentLink = await this.stripeService.createPaymentLink({
+				priceId: pricing.stripePriceId,
+				successUrl,
+				cancelUrl
+			});
+
+			return { success: true, paymentLink: paymentLink.url };
+		} catch (error) {
+			console.error('Error creating payment link:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to create payment link';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	async createCheckoutSession(
+		planId: string,
+		billingCycle: 'monthly' | 'yearly',
+		userEmail: string,
+		successUrl: string,
+		cancelUrl: string
+	): Promise<{
+		success: boolean;
+		checkoutUrl?: string;
+		error?: string;
+	}> {
+		try {
+			const plan = await this.subscriptionPlansRepository.findById(planId);
+			if (!plan) {
+				return { success: false, error: 'Subscription plan not found' };
+			}
+
+			const pricing = await this.planPricingRepository.findByPlanAndCycle(planId, billingCycle);
+			if (!pricing || !pricing.stripePriceId) {
+				return { success: false, error: `Pricing not found for ${billingCycle} billing cycle` };
+			}
+
+			const checkoutSession = await this.stripeService.createCheckoutSession({
+				priceId: pricing.stripePriceId,
+				customerEmail: userEmail,
+				successUrl,
+				cancelUrl,
+				metadata: {
+					planId: planId,
+					billingCycle: billingCycle
+				}
+			});
+
+			return { success: true, checkoutUrl: checkoutSession.url || undefined };
+		} catch (error) {
+			console.error('Error creating checkout session:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to create checkout session';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	async handleStripeSubscriptionSuccess(
+		stripeSubscriptionId: string,
+		stripeCustomerId: string,
+		planId: string,
+		billingCycle: 'monthly' | 'yearly',
+		userId: string
+	): Promise<{
+		success: boolean;
+		subscription?: SelectUserSubscription;
+		error?: string;
+	}> {
+		try {
+			// Get subscription details from Stripe
+			const stripeSubscription = await this.stripeService.getSubscription(stripeSubscriptionId);
+			
+			const subscriptionData: InsertUserSubscription = {
+				id: crypto.randomUUID(),
+				userId,
+				planId,
+				billingCycle,
+				status: stripeSubscription.status as any,
+				currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+				currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+				cancelAtPeriodEnd: false,
+				stripeSubscriptionId,
+				stripeCustomerId,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			};
+
+			const subscription = await this.userSubscriptionsRepository.create(subscriptionData);
+			return { success: true, subscription };
+		} catch (error) {
+			console.error('Error handling Stripe subscription success:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to handle subscription success';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Sync subscription status with Stripe
+	async syncSubscriptionWithStripe(subscriptionId: string): Promise<{
+		success: boolean;
+		subscription?: SelectUserSubscription;
+		error?: string;
+	}> {
+		try {
+			const subscription = await this.userSubscriptionsRepository.findById(subscriptionId);
+			if (!subscription || !subscription.stripeSubscriptionId) {
+				return { success: false, error: 'Subscription not found or missing Stripe ID' };
+			}
+
+			const stripeSubscription = await this.stripeService.getSubscription(subscription.stripeSubscriptionId);
+			
+			// Update subscription with Stripe data
+			const updatedSubscription = await this.userSubscriptionsRepository.update(
+				subscriptionId,
+				{
+					status: stripeSubscription.status as any,
+					currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+					currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+					updatedAt: new Date().toISOString()
+				}
+			);
+
+			return { success: true, subscription: updatedSubscription };
+		} catch (error) {
+			console.error('Error syncing subscription with Stripe:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to sync subscription with Stripe';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Cancel subscription in Stripe
+	async cancelSubscriptionInStripe(subscriptionId: string, cancelAtPeriodEnd: boolean = true): Promise<{
+		success: boolean;
+		subscription?: SelectUserSubscription;
+		error?: string;
+	}> {
+		try {
+			const subscription = await this.userSubscriptionsRepository.findById(subscriptionId);
+			if (!subscription || !subscription.stripeSubscriptionId) {
+				return { success: false, error: 'Subscription not found or missing Stripe ID' };
+			}
+
+			// Cancel in Stripe
+			const stripeSubscription = await this.stripeService.cancelSubscription(
+				subscription.stripeSubscriptionId,
+				cancelAtPeriodEnd
+			);
+
+			// Update local subscription
+			const updatedSubscription = await this.userSubscriptionsRepository.update(
+				subscriptionId,
+				{
+					status: stripeSubscription.status as any,
+					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+					updatedAt: new Date().toISOString()
+				}
+			);
+
+			return { success: true, subscription: updatedSubscription };
+		} catch (error) {
+			console.error('Error canceling subscription in Stripe:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to cancel subscription in Stripe';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Reactivate subscription in Stripe
+	async reactivateSubscriptionInStripe(subscriptionId: string): Promise<{
+		success: boolean;
+		subscription?: SelectUserSubscription;
+		error?: string;
+	}> {
+		try {
+			const subscription = await this.userSubscriptionsRepository.findById(subscriptionId);
+			if (!subscription || !subscription.stripeSubscriptionId) {
+				return { success: false, error: 'Subscription not found or missing Stripe ID' };
+			}
+
+			// Reactivate in Stripe
+			const stripeSubscription = await this.stripeService.reactivateSubscription(
+				subscription.stripeSubscriptionId
+			);
+
+			// Update local subscription
+			const updatedSubscription = await this.userSubscriptionsRepository.update(
+				subscriptionId,
+				{
+					status: stripeSubscription.status as any,
+					cancelAtPeriodEnd: false,
+					updatedAt: new Date().toISOString()
+				}
+			);
+
+			return { success: true, subscription: updatedSubscription };
+		} catch (error) {
+			console.error('Error reactivating subscription in Stripe:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to reactivate subscription in Stripe';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Handle Stripe webhooks
+	async handleStripeWebhook(payload: string, signature: string): Promise<{
+		success: boolean;
+		message?: string;
+		error?: string;
+	}> {
+		try {
+			const event = this.stripeService.constructWebhookEvent(
+				payload,
+				signature,
+				this.#env.STRIPE_WEBHOOK_SECRET
+			);
+
+			switch (event.type) {
+				case 'customer.subscription.created':
+				case 'customer.subscription.updated':
+					await this.handleSubscriptionUpdated(event.data.object as any);
+					break;
+				case 'customer.subscription.deleted':
+					await this.handleSubscriptionDeleted(event.data.object as any);
+					break;
+				case 'invoice.payment_succeeded':
+					await this.handleInvoicePaymentSucceeded(event.data.object as any);
+					break;
+				case 'invoice.payment_failed':
+					await this.handleInvoicePaymentFailed(event.data.object as any);
+					break;
+				default:
+					console.log(`Unhandled event type: ${event.type}`);
+			}
+
+			return { success: true, message: `Handled ${event.type}` };
+		} catch (error) {
+			console.error('Error handling Stripe webhook:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to handle webhook';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	private async handleSubscriptionUpdated(stripeSubscription: any) {
+		// Find subscription by Stripe ID and update
+		const subscriptions = await this.userSubscriptionsRepository.findAll();
+		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+		
+		if (subscription) {
+			await this.userSubscriptionsRepository.update(subscription.id, {
+				status: stripeSubscription.status,
+				currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+				currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+				cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+				updatedAt: new Date().toISOString()
+			});
+		}
+	}
+
+	private async handleSubscriptionDeleted(stripeSubscription: any) {
+		// Find subscription by Stripe ID and mark as canceled
+		const subscriptions = await this.userSubscriptionsRepository.findAll();
+		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+		
+		if (subscription) {
+			await this.userSubscriptionsRepository.update(subscription.id, {
+				status: 'canceled',
+				updatedAt: new Date().toISOString()
+			});
+		}
+	}
+
+	private async handleInvoicePaymentSucceeded(invoice: any) {
+		// Handle successful payment - could update subscription status or send notifications
+		console.log('Invoice payment succeeded:', invoice.id);
+	}
+
+	private async handleInvoicePaymentFailed(invoice: any) {
+		// Handle failed payment - could update subscription status or send notifications
+		console.log('Invoice payment failed:', invoice.id);
+	}
+
+	async updatePlanPricingWithStripe(
+		planId: string,
+		monthlyPrice: number,
+		yearlyPrice: number
+	): Promise<{
+		success: boolean;
+		pricing?: SelectPlanPricing[];
+		error?: string;
+	}> {
+		try {
+			// Get the plan first
+			const plan = await this.subscriptionPlansRepository.findById(planId);
+			if (!plan) {
+				return { success: false, error: 'Subscription plan not found' };
+			}
+
+			if (!plan.stripeProductId) {
+				return { success: false, error: 'Plan has no Stripe product ID' };
+			}
+
+			// Get existing pricing
+			const existingPricing = await this.planPricingRepository.findByPlanId(planId);
+			
+			// Archive old Stripe prices
+			for (const pricing of existingPricing) {
+				if (pricing.stripePriceId) {
+					try {
+						await this.stripeService.archivePrice(pricing.stripePriceId);
+					} catch (stripeError) {
+						console.warn('Failed to archive old Stripe price:', stripeError);
+					}
+				}
+			}
+
+			// Create new Stripe prices
+			const monthlyStripePrice = await this.stripeService.createPrice({
+				productId: plan.stripeProductId,
+				unitAmount: Math.round(monthlyPrice * 100),
+				currency: 'usd',
+				interval: 'month',
+				nickname: `${plan.name} - Monthly`
+			});
+
+			const yearlyStripePrice = await this.stripeService.createPrice({
+				productId: plan.stripeProductId,
+				unitAmount: Math.round(yearlyPrice * 100),
+				currency: 'usd',
+				interval: 'year',
+				nickname: `${plan.name} - Yearly`
+			});
+
+			// Update monthly pricing
+			const monthlyPricingId = `${planId}-monthly`;
+			const existingMonthly = existingPricing.find(p => p.billingCycle === 'monthly');
+			let monthlyPricing;
+			
+			if (existingMonthly) {
+				monthlyPricing = await this.planPricingRepository.update(existingMonthly.id, {
+					price: monthlyPrice,
+					stripePriceId: monthlyStripePrice.id,
+					updatedAt: new Date().toISOString()
+				});
+			} else {
+				monthlyPricing = await this.planPricingRepository.create({
+					id: monthlyPricingId,
+					planId,
+					billingCycle: 'monthly',
+					price: monthlyPrice,
+					stripePriceId: monthlyStripePrice.id,
+					active: true,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				});
+			}
+
+			// Update yearly pricing
+			const yearlyPricingId = `${planId}-yearly`;
+			const existingYearly = existingPricing.find(p => p.billingCycle === 'yearly');
+			let yearlyPricing;
+			
+			if (existingYearly) {
+				yearlyPricing = await this.planPricingRepository.update(existingYearly.id, {
+					price: yearlyPrice,
+					stripePriceId: yearlyStripePrice.id,
+					updatedAt: new Date().toISOString()
+				});
+			} else {
+				yearlyPricing = await this.planPricingRepository.create({
+					id: yearlyPricingId,
+					planId,
+					billingCycle: 'yearly',
+					price: yearlyPrice,
+					stripePriceId: yearlyStripePrice.id,
+					active: true,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				});
+			}
+
+			return {
+				success: true,
+				pricing: [monthlyPricing, yearlyPricing].filter(Boolean) as SelectPlanPricing[]
+			};
+		} catch (error) {
+			console.error('Error updating plan pricing:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to update plan pricing';
+			return { success: false, error: errorMessage };
+		}
 	}
 }
