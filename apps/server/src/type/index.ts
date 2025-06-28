@@ -7,6 +7,7 @@ import {PermissionService} from "permission-manager-worker/src";
 import {UserEntity} from "user-worker/src/entity/user";
 import {SelectAuth} from "auth-worker/drizzle/schema";
 import {LocationService} from "location-worker/src";
+import {BillingService} from "billing-worker/src";
 export type Bindings = {
   ENVIRONMENT: string;
   GITHUB_TOKEN: string;
@@ -25,6 +26,7 @@ type Services = {
   EMAIL_SERVICE: Service<EmailService>
   PERMISSION_MANAGER: Service<PermissionService>
   LOCATION_SERVICE: Service<LocationService>
+  BILLING_SERVICE: Service<BillingService>
 }
 
 export type HonoTypes = {

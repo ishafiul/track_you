@@ -73,7 +73,6 @@ export default function RoleForm({ docType, editingRole, onSuccess }: RoleFormPr
     mutation.mutate(values);
   };
 
-  const availablePermissions: Permission[] = ['view', 'edit', 'admin', 'delete', 'create', 'owner'];
   const availableRoles = rolesData ? Object.keys(rolesData.roles).filter(role => role !== editingRole) : [];
 
   return (
@@ -93,7 +92,7 @@ export default function RoleForm({ docType, editingRole, onSuccess }: RoleFormPr
           label="Role Name"
           rules={[{ required: true, message: 'Please input the role name!' }]}
         >
-          <Input 
+          <Input
             placeholder="Enter role name"
             disabled={!!editingRole}
           />
@@ -107,7 +106,22 @@ export default function RoleForm({ docType, editingRole, onSuccess }: RoleFormPr
           <Select
             mode="multiple"
             placeholder="Select permissions"
-            options={availablePermissions.map(perm => ({ label: perm, value: perm }))}
+            options={[
+              { label: 'view', value: 'view' },
+              { label: 'edit', value: 'edit' },
+              { label: 'admin', value: 'admin' },
+              { label: 'delete', value: 'delete' },
+              { label: 'create', value: 'create' },
+              { label: 'owner', value: 'owner' },
+              { label: 'api_access', value: 'api_access' },
+              { label: 'billing_access', value: 'billing_access' },
+              { label: 'team_manage', value: 'team_manage' },
+              { label: 'api_key_create', value: 'api_key_create' },
+              { label: 'api_key_manage', value: 'api_key_manage' },
+              { label: 'usage_analytics', value: 'usage_analytics' },
+              { label: 'webhook_manage', value: 'webhook_manage' },
+              { label: 'subscription_manage', value: 'subscription_manage' }
+            ]}
           />
         </Form.Item>
 
@@ -124,8 +138,8 @@ export default function RoleForm({ docType, editingRole, onSuccess }: RoleFormPr
 
         <Form.Item>
           <Space>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               htmlType="submit"
               loading={mutation.isPending}
             >
@@ -139,4 +153,4 @@ export default function RoleForm({ docType, editingRole, onSuccess }: RoleFormPr
       </Form>
     </>
   );
-} 
+}

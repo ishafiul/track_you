@@ -27,6 +27,7 @@
     "auth-worker": "workspace:*",
     "mail-worker": "workspace:*",
     "user-worker": "workspace:*",
+    "billing-worker": "workspace:*",
     "location-worker": "workspace:*",
     "typescript": "catalog:",
     "@cloudflare/workers-types": "catalog:",

@@ -10,6 +10,8 @@ import authRoute from "./module/auth/route";
 import userRoute from "./module/user/route";
 import permissionRoute from "./module/permission/route";
 import locationRoute from "./module/location/route";
+import subscriptionPlansRoute from './module/subscription-plans/route';
+import userSubscriptionsRoute from './module/user-subscriptions/route';
 
 const app = new OpenAPIHono<HonoTypes>();
 app.use(logger())
@@ -55,6 +57,8 @@ userRoute(app)
 permissionRoute(app)
 contentManagerRoute(app)
 locationRoute(app)
+subscriptionPlansRoute(app)
+userSubscriptionsRoute(app)
 
 
 app.onError(async (err, c) => {

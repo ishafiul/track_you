@@ -1,0 +1,31 @@
+{
+	"name": "billing-worker",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"cf-typegen": "wrangler types",
+		"generate": "npx drizzle-kit generate",
+		"migrate": "npx drizzle-kit migrate"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@types/uuid": "catalog:",
+		"drizzle-kit": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
+	},
+	"dependencies": {
+		"@libsql/client": "catalog:",
+		"dotenv": "catalog:",
+		"drizzle-orm": "catalog:",
+		"drizzle-zod": "catalog:",
+		"tsx": "catalog:",
+		"uuid": "catalog:"
+	}
+}
