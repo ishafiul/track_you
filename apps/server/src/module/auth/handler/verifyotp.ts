@@ -54,6 +54,80 @@ async function ensureRolesExist(permissionService: any) {
   }
 }
 
+// Helper function to ensure free plan exists and assign user to it
+async function ensureUserHasFreePlan(billingService: any, userId: string) {
+  try {
+    // Check if user already has an active subscription
+    const activeSubscription = await billingService.getUserActiveSubscription(userId);
+    if (activeSubscription) {
+      console.log(`User ${userId} already has active subscription:`, activeSubscription.id);
+      return;
+    }
+
+    // Get all active plans to find the free plan
+    const activePlans = await billingService.getActiveSubscriptionPlans();
+    let freePlan = activePlans?.find((plan: any) => 
+      plan.name.toLowerCase().includes('free')
+    );
+
+    // If no free plan exists, create one
+    if (!freePlan) {
+      console.log('No free plan found, creating default free plan...');
+      const freePlanResult = await billingService.createSubscriptionPlanWithStripe({
+        name: 'Free Plan',
+        description: 'Free tier with basic features - automatically assigned to new users',
+        featuresJson: JSON.stringify({
+          features: [
+            'Basic location tracking',
+            '1,000 API requests per month',
+            'Community support',
+            'Basic dashboard access'
+          ],
+          limitations: [
+            'Limited to 1,000 requests/month',
+            'Basic rate limiting',
+            'No premium features'
+          ]
+        }),
+        apiRateLimit: 10, // 10 requests per minute
+        maxRequestsPerMonth: 1000,
+        monthlyPrice: 0,
+        yearlyPrice: 0
+      });
+
+      if (freePlanResult.success && freePlanResult.plan) {
+        freePlan = freePlanResult.plan;
+      }
+
+      if (!freePlan) {
+        console.error('Failed to create or find free plan');
+        return;
+      }
+    }
+
+    // Create a free subscription for the user (no payment required)
+    const currentDate = new Date();
+    const nextYear = new Date(currentDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+    
+    const subscriptionResult = await billingService.subscribeUserToPlan(
+      userId,
+      freePlan.id,
+      'monthly', // Free plan uses monthly billing cycle
+      currentDate.toISOString(),
+      nextYear.toISOString()
+    );
+
+    if (subscriptionResult.success) {
+      console.log(`Successfully assigned free plan to user ${userId}:`, subscriptionResult.subscription?.id);
+    } else {
+      console.error(`Failed to assign free plan to user ${userId}:`, subscriptionResult.error);
+    }
+  } catch (error) {
+    console.error('Error in ensureUserHasFreePlan:', error);
+    // Don't throw error here as it shouldn't block login
+  }
+}
+
 export default (app: HonoApp) =>
   app.openapi(
     createRoute({
@@ -113,6 +187,18 @@ export default (app: HonoApp) =>
         role: 'me',
         expires_at: null
       });
+
+      // Ensure user has a free plan if they don't have any active subscription
+      if (c.env.BILLING_SERVICE) {
+        try {
+          const billingService = await c.env.BILLING_SERVICE.billing();
+          // Run this asynchronously to not block the login response
+          c.executionCtx.waitUntil(ensureUserHasFreePlan(billingService, user.id));
+        } catch (error) {
+          console.error('Failed to initialize billing service for free plan assignment:', error);
+          // Don't block login if billing service fails
+        }
+      }
 
       // Create JWT payload
       const jwtPayload = {

@@ -1,0 +1,18 @@
+---
+import Layout from '@/components/Layout.astro';
+import { Dashboard } from '@/components/dashboard/Dashboard';
+---
+
+<Layout title="Dashboard - TrackYou">
+  <Dashboard client:load />
+</Layout>
+
+<script>
+  // Redirect if not authenticated
+  if (typeof window !== 'undefined') {
+    const tokens = localStorage.getItem('authTokens');
+    if (!tokens) {
+      window.location.href = '/login';
+    }
+  }
+</script>

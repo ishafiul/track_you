@@ -20,7 +20,7 @@ export function Hero() {
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <a href="/signup">
+              <a href="/login">
                 <Button size="lg" className="font-medium">
                   Get Started
                 </Button>

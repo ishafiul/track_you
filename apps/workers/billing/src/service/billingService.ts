@@ -357,39 +357,92 @@ export class Billing extends RpcTarget {
 		subscription?: SelectUserSubscription;
 		plan?: SelectSubscriptionPlan;
 		pricing?: SelectPlanPricing;
+		accessLevel?: 'full' | 'limited' | 'none';
+		reason?: string;
 	}> {
 		try {
 			const subscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
 			if (!subscription) {
-				return { hasAccess: false };
+				return { hasAccess: false, accessLevel: 'none', reason: 'No active subscription' };
 			}
 
 			const plan = await this.subscriptionPlansRepository.findById(subscription.planId);
 			if (!plan || !plan.active) {
-				return { hasAccess: false };
+				return { hasAccess: false, accessLevel: 'none', reason: 'Plan not found or inactive' };
 			}
 
 			const pricing = await this.planPricingRepository.findByPlanAndCycle(subscription.planId, subscription.billingCycle);
 			if (!pricing || !pricing.active) {
-				return { hasAccess: false };
+				return { hasAccess: false, accessLevel: 'none', reason: 'Pricing not found or inactive' };
+			}
+
+			// Check subscription status first
+			switch (subscription.status) {
+				case 'unpaid':
+					return { 
+						hasAccess: false, 
+						subscription, 
+						plan, 
+						pricing, 
+						accessLevel: 'none', 
+						reason: 'Payment failed - subscription suspended' 
+					};
+				case 'past_due':
+					return { 
+						hasAccess: true, 
+						subscription, 
+						plan, 
+						pricing, 
+						accessLevel: 'limited', 
+						reason: 'Payment overdue - limited access during grace period' 
+					};
+				case 'incomplete':
+				case 'incomplete_expired':
+					return { 
+						hasAccess: false, 
+						subscription, 
+						plan, 
+						pricing, 
+						accessLevel: 'none', 
+						reason: 'Payment setup incomplete' 
+					};
+				case 'canceled':
+					return { 
+						hasAccess: false, 
+						subscription, 
+						plan, 
+						pricing, 
+						accessLevel: 'none', 
+						reason: 'Subscription canceled' 
+					};
 			}
 
 			// Check if subscription is still valid
 			const now = new Date();
 			const periodEnd = new Date(subscription.currentPeriodEnd);
 			if (now > periodEnd && subscription.status !== 'active') {
-				return { hasAccess: false };
+				return { 
+					hasAccess: false, 
+					subscription, 
+					plan, 
+					pricing, 
+					accessLevel: 'none', 
+					reason: 'Subscription period expired' 
+				};
 			}
 
+			// If we get here, subscription is active and valid
 			return { 
 				hasAccess: true, 
 				subscription, 
 				plan,
-				pricing
+				pricing,
+				accessLevel: 'full',
+				reason: 'Active subscription with full access'
 			};
 		} catch (error) {
 			console.error('Error checking user access:', error);
-			return { hasAccess: false };
+			return { hasAccess: false, accessLevel: 'none', reason: 'Error checking subscription' };
 		}
 	}
 
@@ -732,6 +785,12 @@ export class Billing extends RpcTarget {
 				case 'invoice.payment_failed':
 					await this.handleInvoicePaymentFailed(event.data.object as any);
 					break;
+				case 'invoice.payment_action_required':
+					await this.handleInvoicePaymentActionRequired(event.data.object as any);
+					break;
+				case 'customer.subscription.trial_will_end':
+					await this.handleSubscriptionTrialWillEnd(event.data.object as any);
+					break;
 				default:
 					console.log(`Unhandled event type: ${event.type}`);
 			}
@@ -750,13 +809,46 @@ export class Billing extends RpcTarget {
 		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
 		
 		if (subscription) {
-			await this.userSubscriptionsRepository.update(subscription.id, {
+			const updateData = {
 				status: stripeSubscription.status,
 				currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
 				currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
 				cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
 				updatedAt: new Date().toISOString()
-			});
+			};
+
+			await this.userSubscriptionsRepository.update(subscription.id, updateData);
+
+			// Handle specific status changes
+			switch (stripeSubscription.status) {
+				case 'past_due':
+					console.log(`Subscription ${subscription.id} is past due - user ${subscription.userId} has payment issues`);
+					// Could trigger email notification or grace period logic
+					break;
+				case 'unpaid':
+					console.log(`Subscription ${subscription.id} is unpaid - suspending access for user ${subscription.userId}`);
+					// User access should be restricted
+					break;
+				case 'canceled':
+					console.log(`Subscription ${subscription.id} was canceled for user ${subscription.userId}`);
+					// Handle cleanup if needed
+					break;
+				case 'active':
+					console.log(`Subscription ${subscription.id} is active for user ${subscription.userId}`);
+					// Ensure user has full access
+					break;
+				case 'trialing':
+					console.log(`Subscription ${subscription.id} is in trial for user ${subscription.userId}`);
+					break;
+				case 'incomplete':
+					console.log(`Subscription ${subscription.id} is incomplete for user ${subscription.userId} - payment action required`);
+					break;
+				case 'incomplete_expired':
+					console.log(`Subscription ${subscription.id} incomplete period expired for user ${subscription.userId}`);
+					break;
+				default:
+					console.log(`Subscription ${subscription.id} status changed to ${stripeSubscription.status} for user ${subscription.userId}`);
+			}
 		}
 	}
 
@@ -774,13 +866,84 @@ export class Billing extends RpcTarget {
 	}
 
 	private async handleInvoicePaymentSucceeded(invoice: any) {
-		// Handle successful payment - could update subscription status or send notifications
 		console.log('Invoice payment succeeded:', invoice.id);
+		
+		// If this is a subscription invoice, ensure the subscription is active
+		if (invoice.subscription) {
+			const subscriptions = await this.userSubscriptionsRepository.findAll();
+			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
+			
+			if (subscription && subscription.status !== 'active') {
+				await this.userSubscriptionsRepository.update(subscription.id, {
+					status: 'active',
+					updatedAt: new Date().toISOString()
+				});
+				console.log(`Reactivated subscription ${subscription.id} after successful payment`);
+			}
+		}
 	}
 
 	private async handleInvoicePaymentFailed(invoice: any) {
-		// Handle failed payment - could update subscription status or send notifications
 		console.log('Invoice payment failed:', invoice.id);
+		
+		// If this is a subscription invoice, handle the payment failure
+		if (invoice.subscription) {
+			const subscriptions = await this.userSubscriptionsRepository.findAll();
+			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
+			
+			if (subscription) {
+				// Check the attempt count and billing reason
+				const attemptCount = invoice.attempt_count || 0;
+				const nextPaymentAttempt = invoice.next_payment_attempt;
+				
+				if (attemptCount >= 4 || !nextPaymentAttempt) {
+					// Final attempt failed - suspend the subscription
+					await this.userSubscriptionsRepository.update(subscription.id, {
+						status: 'unpaid',
+						updatedAt: new Date().toISOString()
+					});
+					console.log(`Suspended subscription ${subscription.id} after ${attemptCount} failed payment attempts`);
+				} else {
+					// Mark as past_due but keep trying
+					await this.userSubscriptionsRepository.update(subscription.id, {
+						status: 'past_due',
+						updatedAt: new Date().toISOString()
+					});
+					console.log(`Marked subscription ${subscription.id} as past_due, attempt ${attemptCount}/4`);
+				}
+			}
+		}
+	}
+
+	private async handleInvoicePaymentActionRequired(invoice: any) {
+		console.log('Invoice payment action required:', invoice.id);
+		
+		// When payment requires additional action (like 3D Secure)
+		if (invoice.subscription) {
+			const subscriptions = await this.userSubscriptionsRepository.findAll();
+			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
+			
+			if (subscription) {
+				await this.userSubscriptionsRepository.update(subscription.id, {
+					status: 'incomplete',
+					updatedAt: new Date().toISOString()
+				});
+				console.log(`Marked subscription ${subscription.id} as incomplete - payment action required`);
+			}
+		}
+	}
+
+	private async handleSubscriptionTrialWillEnd(stripeSubscription: any) {
+		console.log('Subscription trial will end:', stripeSubscription.id);
+		
+		// Notify user that trial is ending soon
+		const subscriptions = await this.userSubscriptionsRepository.findAll();
+		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+		
+		if (subscription) {
+			// You could send an email notification here
+			console.log(`Trial ending soon for subscription ${subscription.id}, user ${subscription.userId}`);
+		}
 	}
 
 	async updatePlanPricingWithStripe(

@@ -17,7 +17,7 @@ export function CTA() {
               Join thousands of developers who trust our SDK for their location tracking needs. Get started with a free trial today.
             </p>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <a href="/signup">
+              <a href="/login">
                 <Button size="lg" className="font-medium">
                   Start Free Trial
                 </Button>

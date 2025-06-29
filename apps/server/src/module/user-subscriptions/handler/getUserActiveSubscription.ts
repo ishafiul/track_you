@@ -14,9 +14,20 @@ const UserSubscriptionSchema = z.object({
   updatedAt: z.string(),
 }).openapi("UserSubscription");
 
+const PlanDetailsSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  featuresJson: z.string(),
+  apiRateLimit: z.number(),
+  maxRequestsPerMonth: z.number(),
+  active: z.boolean(),
+}).openapi("PlanDetails");
+
 const GetUserActiveSubscriptionResponseSchema = z.object({
   success: z.boolean(),
   subscription: UserSubscriptionSchema.nullable(),
+  plan: PlanDetailsSchema.nullable(),
 }).openapi("GetUserActiveSubscriptionResponse");
 
 export default (app: HonoApp) =>
@@ -25,7 +36,7 @@ export default (app: HonoApp) =>
       method: "get",
       path: "/user-subscriptions/active/{userId}",
       tags: ["User Subscriptions"],
-      description: "Get user's active subscription",
+      description: "Get user's active subscription with plan details",
       request: {
         params: z.object({
           userId: z.string().min(1),
@@ -52,10 +63,16 @@ export default (app: HonoApp) =>
         const billingService = await c.env.BILLING_SERVICE.billing();
 
         const subscription = await billingService.getUserActiveSubscription(userId);
+        let plan = null;
+
+        if (subscription) {
+          plan = await billingService.getSubscriptionPlan(subscription.planId);
+        }
 
         return c.json({
           success: true,
-          subscription
+          subscription,
+          plan
         }, 200);
       } catch (error) {
         throw new HTTPException(500, { message: "Failed to get user's active subscription" });

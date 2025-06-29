@@ -1,8 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = () => {
+      const tokens = localStorage.getItem('authTokens');
+      setIsAuthenticated(!!tokens);
+    };
+
+    checkAuth();
+
+    // Listen for storage changes (when user logs in/out in another tab)
+    window.addEventListener('storage', checkAuth);
+    
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -27,12 +45,20 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <a href="/login">
-            <Button variant="ghost">Log in</Button>
-          </a>
-          <a href="/signup">
-            <Button>Get Started</Button>
-          </a>
+          {isAuthenticated ? (
+            <a href="/dashboard">
+              <Button>Go to Dashboard</Button>
+            </a>
+          ) : (
+            <>
+              <a href="/login">
+                <Button variant="ghost">Log in</Button>
+              </a>
+              <a href="/login">
+                <Button>Get Started</Button>
+              </a>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -66,12 +92,20 @@ export function Header() {
             <a href="/docs" className="py-2 text-foreground/70 hover:text-foreground transition-colors">Documentation</a>
             
             <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-              <a href="/login">
-                <Button variant="ghost" className="w-full justify-start">Log in</Button>
-              </a>
-              <a href="/signup">
-                <Button className="w-full justify-start">Get Started</Button>
-              </a>
+              {isAuthenticated ? (
+                <a href="/dashboard">
+                  <Button className="w-full justify-start">Go to Dashboard</Button>
+                </a>
+              ) : (
+                <>
+                  <a href="/login">
+                    <Button variant="ghost" className="w-full justify-start">Log in</Button>
+                  </a>
+                  <a href="/login">
+                    <Button className="w-full justify-start">Get Started</Button>
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>

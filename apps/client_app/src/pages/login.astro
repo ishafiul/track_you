@@ -1,0 +1,22 @@
+---
+import Layout from '@/components/Layout.astro';
+import { LoginForm } from '@/components/auth/LoginForm';
+---
+
+<Layout title="Login - TrackYou">
+  <div class="min-h-screen flex items-center justify-center bg-background">
+    <div class="w-full max-w-md">
+      <LoginForm client:load />
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Redirect if already authenticated
+  if (typeof window !== 'undefined') {
+    const tokens = localStorage.getItem('authTokens');
+    if (tokens) {
+      window.location.href = '/dashboard';
+    }
+  }
+</script>
