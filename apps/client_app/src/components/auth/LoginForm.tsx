@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { authService } from '@/lib/auth';
 import { useAuth } from '@/lib/auth-context';
 import { AuthProvider } from '@/lib/auth-context';
+import { localStorageService } from 'http-client-local';
 
 function LoginFormContent() {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ function LoginFormContent() {
 
   // Check for existing device UUID on mount
   useEffect(() => {
-    const existingDeviceUuid = localStorage.getItem('deviceUuid');
+    const existingDeviceUuid = localStorageService.getDeviceUuid();
     if (existingDeviceUuid) {
       setDeviceUuid(existingDeviceUuid);
     }
@@ -35,7 +36,7 @@ function LoginFormContent() {
       currentDeviceUuid = deviceResponse.deviceUuid;
       setDeviceUuid(currentDeviceUuid);
       // Store for future use
-      localStorage.setItem('deviceUuid', currentDeviceUuid);
+      localStorageService.setDeviceUuid(currentDeviceUuid);
 
       // Step 2: Request OTP with the device UUID
       await authService.requestOtp({ email, deviceUuid: currentDeviceUuid });

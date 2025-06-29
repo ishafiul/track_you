@@ -1,201 +1,121 @@
+import { createHttpClient, localStorageService } from 'http-client-local';
+
 export interface AuthTokens {
   accessToken: string;
   userId: string;
 }
 
-export interface LoginRequest {
+interface CreateDeviceUuidResponse {
+  deviceUuid: string;
+}
+
+interface RequestOtpRequest {
   email: string;
   deviceUuid: string;
 }
 
-export interface VerifyOtpRequest {
+interface VerifyOtpRequest {
   email: string;
   deviceUuid: string;
   otp: number;
 }
 
-export interface CreateDeviceUuidRequest {
-  userAgent?: string;
-  platform?: string;
-  deviceModel?: string;
-  osVersion?: string;
+interface VerifyOtpResponse {
+  accessToken: string;
+  userId: string;
 }
 
-export interface CreateDeviceUuidResponse {
-  deviceUuid: string;
-}
+class AuthService {
+  private httpClient;
 
-export class AuthService {
-  private baseUrl: string;
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
-
-  async requestOtp(data: LoginRequest): Promise<{ message: string }> {
-    const response = await fetch(`${this.baseUrl}/auth/reqOtp`, {
-      method: 'POST',
+  constructor() {
+    const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
+    this.httpClient = createHttpClient({
+      baseURL: apiUrl,
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+      }
     });
+  }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to request OTP');
-    }
+  async createDeviceUuid(): Promise<CreateDeviceUuidResponse> {
+    // Send basic device information that the API expects
+    const deviceInfo = {
+      deviceType: 'web',
+      osName: navigator.platform || 'unknown',
+      osVersion: navigator.userAgent || 'unknown',
+      deviceModel: 'browser',
+      isPhysicalDevice: 'false',
+      appVersion: '1.0.0', // You can make this dynamic
+      fcmToken: null,
+      longitude: null,
+      latitude: null,
+    };
+    
+    return this.httpClient.post<CreateDeviceUuidResponse>('/auth/createDeviceUuid', deviceInfo);
+  }
 
-    return response.json();
+  async requestOtp(data: RequestOtpRequest): Promise<void> {
+    await this.httpClient.post('/auth/reqOtp', data);
   }
 
   async verifyOtp(data: VerifyOtpRequest): Promise<AuthTokens> {
-    const response = await fetch(`${this.baseUrl}/auth/verifyOtp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to verify OTP');
-    }
-
-    return response.json();
-  }
-
-  async logout(): Promise<void> {
-    const tokens = this.getTokens();
-    if (!tokens) return;
-
-    try {
-      await fetch(`${this.baseUrl}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${tokens.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      this.clearTokens();
-    }
-  }
-
-  async createDeviceUuid(data?: CreateDeviceUuidRequest): Promise<CreateDeviceUuidResponse> {
-    const deviceData = data || this.getDeviceInfo();
-    
-    const response = await fetch(`${this.baseUrl}/auth/createDeviceUuid`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(deviceData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create device UUID');
-    }
-
-    return response.json();
-  }
-
-  getDeviceInfo(): CreateDeviceUuidRequest {
+    const response = await this.httpClient.post<VerifyOtpResponse>('/auth/verifyOtp', data);
     return {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      deviceModel: this.getDeviceModel(),
-      osVersion: this.getOSVersion(),
+      accessToken: response.accessToken,
+      userId: response.userId,
     };
   }
 
-  getDeviceModel(): string {
-    const userAgent = navigator.userAgent;
-    
-    // Mobile device detection
-    if (/iPhone/.test(userAgent)) {
-      const match = userAgent.match(/iPhone OS (\d+_\d+)/);
-      return match ? `iPhone (iOS ${match[1].replace('_', '.')})` : 'iPhone';
-    }
-    
-    if (/iPad/.test(userAgent)) {
-      return 'iPad';
-    }
-    
-    if (/Android/.test(userAgent)) {
-      const match = userAgent.match(/Android (\d+\.\d+)/);
-      return match ? `Android ${match[1]}` : 'Android';
-    }
-    
-    // Desktop detection
-    if (/Mac/.test(userAgent)) {
-      return 'Mac';
-    }
-    
-    if (/Windows/.test(userAgent)) {
-      return 'Windows';
-    }
-    
-    if (/Linux/.test(userAgent)) {
-      return 'Linux';
-    }
-    
-    return 'Unknown';
-  }
-
-  getOSVersion(): string {
-    const userAgent = navigator.userAgent;
-    
-    // iOS
-    const iosMatch = userAgent.match(/OS (\d+_\d+)/);
-    if (iosMatch) {
-      return iosMatch[1].replace('_', '.');
-    }
-    
-    // Android
-    const androidMatch = userAgent.match(/Android (\d+\.\d+)/);
-    if (androidMatch) {
-      return androidMatch[1];
-    }
-    
-    // Windows
-    const windowsMatch = userAgent.match(/Windows NT (\d+\.\d+)/);
-    if (windowsMatch) {
-      return windowsMatch[1];
-    }
-    
-    // macOS
-    const macMatch = userAgent.match(/Mac OS X (\d+_\d+)/);
-    if (macMatch) {
-      return macMatch[1].replace('_', '.');
-    }
-    
-    return 'Unknown';
-  }
-
-
-
   setTokens(tokens: AuthTokens): void {
+    // Store in custom format for compatibility
     localStorage.setItem('authTokens', JSON.stringify(tokens));
+    // Use the package's localStorage service for HTTP client integration
+    localStorageService.setAccessToken(tokens.accessToken);
+    // Also store device UUID if we have it
+    const deviceUuid = localStorageService.getDeviceUuid();
+    if (!deviceUuid) {
+      // Try to get from old storage and migrate
+      const oldDeviceUuid = localStorage.getItem('deviceUuid');
+      if (oldDeviceUuid) {
+        localStorageService.setDeviceUuid(oldDeviceUuid);
+        localStorage.removeItem('deviceUuid'); // Clean up old storage
+      }
+    }
   }
 
   getTokens(): AuthTokens | null {
-    const tokens = localStorage.getItem('authTokens');
-    return tokens ? JSON.parse(tokens) : null;
+    // Try to get from our custom storage first
+    const stored = localStorage.getItem('authTokens');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        // Fall back to package's localStorage service
+        const accessToken = localStorageService.getAccessToken();
+        return accessToken ? { accessToken, userId: '' } : null;
+      }
+    }
+    
+    // Fall back to package's localStorage service
+    const accessToken = localStorageService.getAccessToken();
+    return accessToken ? { accessToken, userId: '' } : null;
   }
 
-  clearTokens(): void {
+  async isAuthenticated(): Promise<boolean> {
+    // Check if we have tokens in either storage
+    const accessToken = localStorageService.getAccessToken();
+    const customTokens = this.getTokens();
+    
+    return !!(accessToken || customTokens?.accessToken);
+  }
+
+  async logout(): Promise<void> {
+    // Clear both storages
     localStorage.removeItem('authTokens');
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getTokens();
+    localStorage.removeItem('deviceUuid'); // Clean up legacy storage
+    localStorageService.clearAuthData();
   }
 }
 
-// Create singleton instance
-export const authService = new AuthService(import.meta.env.PUBLIC_API_URL || 'http://localhost:8787'); 
+export const authService = new AuthService(); 

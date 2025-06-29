@@ -169,9 +169,12 @@ export const subscriptionPlansApi = {
 
 // User Subscriptions API
 export const userSubscriptionsApi = {
-  // Get all user subscriptions
-  getAll: (): Promise<UserSubscription[]> =>
-    httpClient.get('/user-subscriptions'),
+  // Get all user subscriptions - temporary solution
+  getAll: (): Promise<UserSubscription[]> => {
+    // TODO: Implement proper endpoint for getting all subscriptions
+    // For now, return empty array to prevent 404 errors
+    return Promise.resolve([]);
+  },
 
   // Get user subscription by ID
   getById: (id: string): Promise<UserSubscriptionResponse> =>

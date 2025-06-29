@@ -92,6 +92,9 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
+      http-client-local:
+        specifier: workspace:*
+        version: link:../../packages/ts/http-client
       next:
         specifier: 15.2.4
         version: 15.2.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -201,6 +204,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      http-client-local:
+        specifier: workspace:*
+        version: link:../../packages/ts/http-client
       lucide-react:
         specifier: ^0.516.0
         version: 0.516.0(react@19.1.0)
@@ -506,6 +512,12 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 3.114.9(@cloudflare/workers-types@4.20250606.0)
+
+  packages/ts/http-client:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.3
 
   packages/ts/middleware:
     dependencies:

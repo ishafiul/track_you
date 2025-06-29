@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { ReactNode } from 'react';
-import { localStorageService } from '../service/localStorage.service';
+import { localStorageService } from 'http-client-local';
 
 interface AuthGuardProps {
   children: ReactNode;

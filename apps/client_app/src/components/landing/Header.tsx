@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { localStorageService } from 'http-client-local';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -8,8 +9,9 @@ export function Header() {
   useEffect(() => {
     // Check authentication status
     const checkAuth = () => {
-      const tokens = localStorage.getItem('authTokens');
-      setIsAuthenticated(!!tokens);
+      const accessToken = localStorageService.getAccessToken();
+      const customTokens = localStorage.getItem('authTokens');
+      setIsAuthenticated(!!(accessToken || customTokens));
     };
 
     checkAuth();

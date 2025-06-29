@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
+import { httpClient } from '@/lib/http-client';
 
 interface Subscription {
   id: string;
@@ -87,22 +88,14 @@ export function DashboardContent() {
     
     setSubscriptionLoading(true);
     try {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
-      
       // Fetch subscription details
-      const subscriptionResponse = await fetch(`${apiUrl}/user-subscriptions/active/${tokens.userId}`);
-      if (subscriptionResponse.ok) {
-        const subscriptionData = await subscriptionResponse.json();
-        setSubscription(subscriptionData.subscription);
-        setPlan(subscriptionData.plan);
-      }
+      const subscriptionData = await httpClient.get<{subscription: Subscription, plan: Plan}>(`/user-subscriptions/active/${tokens.userId}`);
+      setSubscription(subscriptionData.subscription);
+      setPlan(subscriptionData.plan);
 
       // Fetch access status
-      const accessResponse = await fetch(`${apiUrl}/user-subscriptions/access/${tokens.userId}`);
-      if (accessResponse.ok) {
-        const accessData = await accessResponse.json();
-        setUserAccess(accessData);
-      }
+      const accessData = await httpClient.get<UserAccess>(`/user-subscriptions/access/${tokens.userId}`);
+      setUserAccess(accessData);
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
     } finally {
@@ -113,17 +106,13 @@ export function DashboardContent() {
   const fetchAvailablePlans = async () => {
     setPlansLoading(true);
     try {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
-      const response = await fetch(`${apiUrl}/subscription-plans/active-with-pricing`);
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out free plans for upgrade/downgrade options
-        const paidPlans = data.plans.filter((p: SubscriptionPlan) => 
-          !p.name.toLowerCase().includes('free') && 
-          p.pricing.some((pricing: PlanPricing) => pricing.price > 0)
-        );
-        setAvailablePlans(paidPlans);
-      }
+      const data = await httpClient.get<{plans: SubscriptionPlan[]}>('/subscription-plans/active-with-pricing');
+      // Filter out free plans for upgrade/downgrade options
+      const paidPlans = data.plans.filter((p: SubscriptionPlan) => 
+        !p.name.toLowerCase().includes('free') && 
+        p.pricing.some((pricing: PlanPricing) => pricing.price > 0)
+      );
+      setAvailablePlans(paidPlans);
     } catch (error) {
       console.error('Failed to fetch available plans:', error);
     } finally {
@@ -136,29 +125,17 @@ export function DashboardContent() {
     
     setUpgradeLoading(true);
     try {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
-      const response = await fetch(`${apiUrl}/subscription-plans/payment-link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planId: newPlanId,
-          billingCycle,
-          successUrl: `${window.location.origin}/dashboard?upgrade=success`,
-          cancelUrl: `${window.location.origin}/dashboard?upgrade=cancelled`,
-        }),
+      const data = await httpClient.post<{success: boolean, paymentLink?: string, error?: string}>('/subscription-plans/payment-link', {
+        planId: newPlanId,
+        billingCycle,
+        successUrl: `${window.location.origin}/dashboard?upgrade=success`,
+        cancelUrl: `${window.location.origin}/dashboard?upgrade=cancelled`,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.paymentLink) {
-          window.location.href = data.paymentLink;
-        } else {
-          alert('Failed to create upgrade link: ' + (data.error || 'Unknown error'));
-        }
+      if (data.success && data.paymentLink) {
+        //window.location.href = data.paymentLink;
       } else {
-        alert('Failed to create upgrade link');
+        alert('Failed to create upgrade link: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error creating upgrade link:', error);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { httpClient } from '@/lib/http-client';
 import { authService } from '@/lib/auth';
 
 interface PlanPricing {
@@ -54,21 +55,13 @@ export function Pricing() {
 
   const fetchPlans = async () => {
     try {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
-      console.log('Fetching from API URL:', apiUrl);
-      
-      const response = await fetch(`${apiUrl}/subscription-plans/active-with-pricing`);
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out free plans from pricing display
-        const paidPlans = data.plans.filter((plan: SubscriptionPlan) => 
-          !plan.name.toLowerCase().includes('free') && 
-          plan.pricing.some((p: PlanPricing) => p.price > 0)
-        );
-        setPlans(paidPlans);
-      } else {
-        setError(`Failed to fetch pricing plans: ${response.status} ${response.statusText}`);
-      }
+      const data = await httpClient.get<{plans: SubscriptionPlan[]}>('/subscription-plans/active-with-pricing');
+      // Filter out free plans from pricing display
+      const paidPlans = data.plans.filter((plan: SubscriptionPlan) => 
+        !plan.name.toLowerCase().includes('free') && 
+        plan.pricing.some((p: PlanPricing) => p.price > 0)
+      );
+      setPlans(paidPlans);
     } catch (err) {
       setError('Failed to fetch pricing plans');
       console.error('Error fetching plans:', err);
@@ -90,30 +83,17 @@ export function Pricing() {
         return;
       }
 
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
-      
-      const response = await fetch(`${apiUrl}/subscription-plans/payment-link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planId,
-          billingCycle: cycle,
-          successUrl: `${window.location.origin}/dashboard?payment=success`,
-          cancelUrl: `${window.location.origin}/pricing?payment=cancelled`,
-        }),
+      const data = await httpClient.post<{success: boolean, paymentLink?: string, error?: string}>('/subscription-plans/payment-link', {
+        planId,
+        billingCycle: cycle,
+        successUrl: `${window.location.origin}/dashboard?payment=success`,
+        cancelUrl: `${window.location.origin}/pricing?payment=cancelled`,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.paymentLink) {
-          window.location.href = data.paymentLink;
-        } else {
-          alert('Failed to create payment link: ' + (data.error || 'Unknown error'));
-        }
+      if (data.success && data.paymentLink) {
+        window.location.href = data.paymentLink;
       } else {
-        alert('Failed to create payment link');
+        alert('Failed to create payment link: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error creating payment link:', error);

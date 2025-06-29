@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
+import { authMiddleware } from "../../../middleware/auth";
 
 // Request schema for creating payment link
 const CreatePaymentLinkSchema = z.object({
@@ -23,6 +24,8 @@ export default (app: HonoApp) =>
       method: "post",
       path: "/subscription-plans/payment-link",
       tags: ["Subscription Plans"],
+      security: [{AUTH: []}],
+      middleware: [authMiddleware],
       description: "Create a Stripe payment link for a subscription plan with specific billing cycle",
       request: {
         body: {

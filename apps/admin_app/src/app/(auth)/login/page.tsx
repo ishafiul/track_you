@@ -1,6 +1,6 @@
 'use client'
 import { authApi } from "@/api";
-import localStorageService from "@/service/localStorage.service";
+import { localStorageService } from "http-client-local";
 import { useMutation } from "@tanstack/react-query"
 import { Button, Form, Input, message, Typography } from 'antd';
 import { useEffect, useState } from "react";
