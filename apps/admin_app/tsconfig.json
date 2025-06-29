@@ -32,6 +32,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/[locale]/_components/faq/FAQ.tsx"
-  ],
+, "../workers/billing/src/utils/url.ts"  ],
   "exclude": ["node_modules"]
 }

@@ -543,7 +543,7 @@ export class Billing extends RpcTarget {
 		}
 	}
 
-	async createPaymentLinkForPlan(planId: string, billingCycle: 'monthly' | 'yearly', successUrl: string, cancelUrl: string): Promise<{
+	async createPaymentLinkForPlan(planId: string, billingCycle: 'monthly' | 'yearly', successUrl: string, cancelUrl: string, metadata: Record<string, string>): Promise<{
 		success: boolean;
 		paymentLink?: string;
 		error?: string;
@@ -562,7 +562,8 @@ export class Billing extends RpcTarget {
 			const paymentLink = await this.stripeService.createPaymentLink({
 				priceId: pricing.stripePriceId,
 				successUrl,
-				cancelUrl
+				cancelUrl,
+				metadata: metadata
 			});
 
 			return { success: true, paymentLink: paymentLink.url };
@@ -759,10 +760,11 @@ export class Billing extends RpcTarget {
 	}
 
 	// Handle Stripe webhooks
-	async handleStripeWebhook(payload: string, signature: string): Promise<{
+	async handleStripeWebhook(payload: string, signature: string,workerHost: string): Promise<{
 		success: boolean;
 		message?: string;
 		error?: string;
+		
 	}> {
 		try {
 			const event = this.stripeService.constructWebhookEvent(
@@ -770,6 +772,16 @@ export class Billing extends RpcTarget {
 				signature,
 				this.#env.STRIPE_WEBHOOK_SECRET
 			);
+
+			// Check if event metadata contains host and matches workerHost
+			const eventObj = event.data.object as any;
+			const eventHost = eventObj?.metadata?.host;
+			if (eventHost && eventHost !== workerHost) {
+				return { 
+					success: true, 
+					message: `Event ignored - host mismatch (event: ${eventHost}, worker: ${workerHost})` 
+				};
+			}
 
 			switch (event.type) {
 				case 'customer.subscription.created':
@@ -1056,3 +1068,7 @@ export class Billing extends RpcTarget {
 		}
 	}
 }
+function getBaseUrl(c: any): { workerHost: any; } {
+	throw new Error("Function not implemented.");
+}
+

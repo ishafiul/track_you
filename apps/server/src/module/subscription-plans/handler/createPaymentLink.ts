@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
 import { authMiddleware } from "../../../middleware/auth";
+import { getBaseUrl } from "../../../utils/url";
 
 // Request schema for creating payment link
 const CreatePaymentLinkSchema = z.object({
@@ -62,12 +63,22 @@ export default (app: HonoApp) =>
         const billingService = await c.env.BILLING_SERVICE.billing();
         const bodyJson = await c.req.json();
         const body = CreatePaymentLinkSchema.parse(bodyJson);
-
+        const { workerUrl,workerHost } = getBaseUrl(c);
+        const payload = c.get('auth');
+        if (!payload?.userId) {
+          throw new HTTPException(401, { message: 'Unauthorized' });
+        }
         const result = await billingService.createPaymentLinkForPlan(
           body.planId,
           body.billingCycle,
           body.successUrl,
-          body.cancelUrl
+          body.cancelUrl, 
+          {
+            host: workerHost,
+            userId: payload?.userId,
+            planId: body.planId,
+            billingCycle: body.billingCycle
+          }
         );
 
         if (!result.success) {

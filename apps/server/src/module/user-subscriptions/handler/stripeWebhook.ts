@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { HonoApp, HonoContext } from "../../../type";
 import { HTTPException } from "hono/http-exception";
+import { getBaseUrl } from "../../../utils/url";
 
 // Response schema
 const WebhookResponseSchema = z.object({
@@ -63,9 +64,9 @@ export default (app: HonoApp) =>
             error: 'Missing stripe-signature header'
           }, 400);
         }
-
+        const { workerHost } = getBaseUrl(c);
         // Handle the webhook
-        const result = await billingService.handleStripeWebhook(body, signature);
+        const result = await billingService.handleStripeWebhook(body, signature,workerHost);
 
         if (!result.success) {
           return c.json({
