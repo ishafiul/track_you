@@ -6,6 +6,8 @@ export class StripeService {
 	constructor(secretKey: string) {
 		this.stripe = new Stripe(secretKey, {
 			apiVersion: '2023-10-16',
+			// Configure for Cloudflare Workers environment
+			httpClient: Stripe.createFetchHttpClient(),
 		});
 	}
 
@@ -178,8 +180,8 @@ export class StripeService {
 	}
 
 	// Webhook handling
-	constructWebhookEvent(payload: string, signature: string, endpointSecret: string): Stripe.Event {
-		return this.stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+	async constructWebhookEvent(payload: string, signature: string, endpointSecret: string): Promise<Stripe.Event> {
+		return await this.stripe.webhooks.constructEventAsync(payload, signature, endpointSecret);
 	}
 
 	// Checkout Session for one-time payments or subscriptions
@@ -202,7 +204,6 @@ export class StripeService {
 			],
 			success_url: params.successUrl,
 			cancel_url: params.cancelUrl,
-			metadata: params.metadata,
 		};
 
 		if (params.customerId) {
@@ -215,6 +216,20 @@ export class StripeService {
 
 		if (params.mode === 'subscription' || !params.mode) {
 			sessionParams.payment_method_collection = 'always';
+			
+			// For subscriptions, attach metadata to the subscription itself
+			if (params.metadata) {
+				sessionParams.subscription_data = {
+					metadata: params.metadata
+				};
+			}
+		} else {
+			// For one-time payments, attach metadata to the payment intent
+			if (params.metadata) {
+				sessionParams.payment_intent_data = {
+					metadata: params.metadata
+				};
+			}
 		}
 
 		return await this.stripe.checkout.sessions.create(sessionParams);

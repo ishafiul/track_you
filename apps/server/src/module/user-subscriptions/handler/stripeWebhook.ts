@@ -66,14 +66,14 @@ export default (app: HonoApp) =>
         }
         const { workerHost } = getBaseUrl(c);
         // Handle the webhook
-        const result = await billingService.handleStripeWebhook(body, signature,workerHost);
+        const result = await billingService.handleStripeWebhook(body, signature, workerHost);
 
-        if (!result.success) {
-          return c.json({
-            success: false,
-            error: result.error
-          }, 400);
-        }
+        // if (!result.success) {
+        //   return c.json({
+        //     success: false,
+        //     error: result.error
+        //   }, 400);
+        // }
 
         return c.json({
           success: true,

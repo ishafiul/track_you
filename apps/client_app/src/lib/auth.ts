@@ -113,6 +113,7 @@ class AuthService {
   async logout(): Promise<void> {
     // Clear both storages
     localStorage.removeItem('authTokens');
+    localStorage.removeItem('userData'); // Clear user data including email
     localStorage.removeItem('deviceUuid'); // Clean up legacy storage
     localStorageService.clearAuthData();
   }

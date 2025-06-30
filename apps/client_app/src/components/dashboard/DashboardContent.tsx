@@ -69,6 +69,7 @@ export function DashboardContent() {
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -80,6 +81,37 @@ export function DashboardContent() {
     if (tokens?.userId) {
       fetchUserSubscription();
       fetchAvailablePlans();
+    }
+  }, [tokens?.userId]);
+
+  // Check for payment status in URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const payment = urlParams.get('payment');
+    const upgrade = urlParams.get('upgrade');
+    
+    if (payment === 'success') {
+      setPaymentMessage({type: 'success', text: 'Payment successful! Your subscription is now active.'});
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+      // Refresh subscription data
+      if (tokens?.userId) {
+        fetchUserSubscription();
+      }
+    } else if (payment === 'cancelled') {
+      setPaymentMessage({type: 'error', text: 'Payment was cancelled. Please try again if you want to subscribe.'});
+      window.history.replaceState({}, '', '/dashboard');
+    }
+    
+    if (upgrade === 'success') {
+      setPaymentMessage({type: 'success', text: 'Upgrade successful! Your subscription has been updated.'});
+      window.history.replaceState({}, '', '/dashboard');
+      if (tokens?.userId) {
+        fetchUserSubscription();
+      }
+    } else if (upgrade === 'cancelled') {
+      setPaymentMessage({type: 'error', text: 'Upgrade was cancelled.'});
+      window.history.replaceState({}, '', '/dashboard');
     }
   }, [tokens?.userId]);
 
@@ -125,21 +157,24 @@ export function DashboardContent() {
     
     setUpgradeLoading(true);
     try {
-      const data = await httpClient.post<{success: boolean, paymentLink?: string, error?: string}>('/subscription-plans/payment-link', {
+    
+
+      // Use the new checkout session endpoint
+      const data = await httpClient.post<{success: boolean, checkoutUrl?: string, error?: string}>('/subscription-plans/checkout-session', {
         planId: newPlanId,
         billingCycle,
         successUrl: `${window.location.origin}/dashboard?upgrade=success`,
         cancelUrl: `${window.location.origin}/dashboard?upgrade=cancelled`,
       });
 
-      if (data.success && data.paymentLink) {
-        //window.location.href = data.paymentLink;
+      if (data.success && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
-        alert('Failed to create upgrade link: ' + (data.error || 'Unknown error'));
+        alert('Failed to create checkout session: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error creating upgrade link:', error);
-      alert('Failed to create upgrade link');
+      console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session');
     } finally {
       setUpgradeLoading(false);
     }
@@ -204,6 +239,40 @@ export function DashboardContent() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Payment Message */}
+        {paymentMessage && (
+          <div className={`mb-6 p-4 rounded-lg border ${
+            paymentMessage.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {paymentMessage.type === 'success' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              )}
+              <div className="flex-1">
+                <p className="font-medium">{paymentMessage.text}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPaymentMessage(null)}
+                className="text-current hover:bg-current/10"
+              >
+                ×
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Status Banner */}
         {userAccess && !userAccess.hasAccess && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">

@@ -61,6 +61,14 @@ function LoginFormContent() {
         otp: parseInt(otp),
       });
       
+      // Store user data for future use (including email for checkout sessions)
+      const userData = {
+        email,
+        userId: tokens.userId,
+        loginTime: new Date().toISOString()
+      };
+      localStorage.setItem('userData', JSON.stringify(userData));
+      
       login(tokens);
       window.location.href = '/dashboard';
     } catch (err) {

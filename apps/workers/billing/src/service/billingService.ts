@@ -543,11 +543,12 @@ export class Billing extends RpcTarget {
 		}
 	}
 
-	async createPaymentLinkForPlan(planId: string, billingCycle: 'monthly' | 'yearly', successUrl: string, cancelUrl: string, metadata: Record<string, string>): Promise<{
+	async createPaymentLinkForPlan(data:{planId: string, billingCycle: 'monthly' | 'yearly', successUrl: string, cancelUrl: string, metadata: Record<string, string>}): Promise<{
 		success: boolean;
 		paymentLink?: string;
 		error?: string;
 	}> {
+		const {planId, billingCycle, successUrl, cancelUrl, metadata} = data;
 		try {
 			const plan = await this.subscriptionPlansRepository.findById(planId);
 			if (!plan) {
@@ -570,6 +571,51 @@ export class Billing extends RpcTarget {
 		} catch (error) {
 			console.error('Error creating payment link:', error);
 			const errorMessage = error instanceof Error ? error.message : 'Failed to create payment link';
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	// Create a checkout session instead of payment link for better metadata handling
+	async createCheckoutSessionForPlan(data: {
+		planId: string, 
+		billingCycle: 'monthly' | 'yearly', 
+		userEmail: string,
+		successUrl: string, 
+		cancelUrl: string, 
+		metadata: Record<string, string>
+	}): Promise<{
+		success: boolean;
+		checkoutUrl?: string;
+		error?: string;
+	}> {
+		const {planId, billingCycle, userEmail, successUrl, cancelUrl, metadata} = data;
+		try {
+			const plan = await this.subscriptionPlansRepository.findById(planId);
+			if (!plan) {
+				return { success: false, error: 'Subscription plan not found' };
+			}
+
+			const pricing = await this.planPricingRepository.findByPlanAndCycle(planId, billingCycle);
+			if (!pricing || !pricing.stripePriceId) {
+				return { success: false, error: `Pricing not found for ${billingCycle} billing cycle` };
+			}
+
+			const checkoutSession = await this.stripeService.createCheckoutSession({
+				priceId: pricing.stripePriceId,
+				customerEmail: userEmail,
+				successUrl,
+				cancelUrl,
+				metadata: {
+					...metadata,
+					planId,
+					billingCycle
+				}
+			});
+
+			return { success: true, checkoutUrl: checkoutSession.url || undefined };
+		} catch (error) {
+			console.error('Error creating checkout session:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to create checkout session';
 			return { success: false, error: errorMessage };
 		}
 	}
@@ -760,23 +806,30 @@ export class Billing extends RpcTarget {
 	}
 
 	// Handle Stripe webhooks
-	async handleStripeWebhook(payload: string, signature: string,workerHost: string): Promise<{
+	async handleStripeWebhook(payload: string, signature: string, workerHost: string): Promise<{
 		success: boolean;
 		message?: string;
 		error?: string;
 		
 	}> {
+	
 		try {
-			const event = this.stripeService.constructWebhookEvent(
+			const event = await this.stripeService.constructWebhookEvent(
 				payload,
 				signature,
 				this.#env.STRIPE_WEBHOOK_SECRET
 			);
 
 			// Check if event metadata contains host and matches workerHost
+			// Only filter if host is explicitly set and doesn't match
 			const eventObj = event.data.object as any;
 			const eventHost = eventObj?.metadata?.host;
+			
+			console.log(`Event type: ${event.type}, Event host: ${eventHost || 'none'}, Worker host: ${workerHost}`);
+			
+			// Only ignore if host is explicitly set and doesn't match
 			if (eventHost && eventHost !== workerHost) {
+				console.log(`Ignoring event due to host mismatch - event: ${eventHost}, worker: ${workerHost}`);
 				return { 
 					success: true, 
 					message: `Event ignored - host mismatch (event: ${eventHost}, worker: ${workerHost})` 
@@ -790,6 +843,9 @@ export class Billing extends RpcTarget {
 					break;
 				case 'customer.subscription.deleted':
 					await this.handleSubscriptionDeleted(event.data.object as any);
+					break;
+				case 'checkout.session.completed':
+					await this.handleCheckoutSessionCompleted(event.data.object as any);
 					break;
 				case 'invoice.payment_succeeded':
 					await this.handleInvoicePaymentSucceeded(event.data.object as any);
@@ -807,18 +863,94 @@ export class Billing extends RpcTarget {
 					console.log(`Unhandled event type: ${event.type}`);
 			}
 
-			return { success: true, message: `Handled ${event.type}` };
+			return { success: true, message: `Handled ` };
 		} catch (error) {
 			console.error('Error handling Stripe webhook:', error);
-			const errorMessage = error instanceof Error ? error.message : 'Failed to handle webhook';
+			const errorMessage = 'Failed to handle webhook';
 			return { success: false, error: errorMessage };
 		}
 	}
 
+	private async handleCheckoutSessionCompleted(checkoutSession: any) {
+		console.log('Checkout session completed:', checkoutSession.id);
+		console.log('Checkout session metadata:', JSON.stringify(checkoutSession.metadata, null, 2));
+		
+		// If this checkout session created a subscription, we need to create our local subscription record
+		if (checkoutSession.subscription && checkoutSession.metadata) {
+			const userId = checkoutSession.metadata.userId;
+			const planId = checkoutSession.metadata.planId;
+			const billingCycle = checkoutSession.metadata.billingCycle;
+			const host = checkoutSession.metadata.host;
+			
+			console.log(`Processing subscription creation for user: ${userId}, plan: ${planId}, cycle: ${billingCycle}`);
+			
+			if (userId && planId && billingCycle) {
+				try {
+					// Get the subscription from Stripe to get full details
+					const stripeSubscription = await this.stripeService.getSubscription(checkoutSession.subscription);
+					
+					console.log('Stripe subscription metadata:', JSON.stringify(stripeSubscription.metadata, null, 2));
+					
+					// Create local subscription record
+					const subscriptionData: InsertUserSubscription = {
+						id: crypto.randomUUID(),
+						userId,
+						planId,
+						billingCycle: billingCycle as 'monthly' | 'yearly',
+						status: stripeSubscription.status as any,
+						currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+						currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+						cancelAtPeriodEnd: false,
+						stripeSubscriptionId: checkoutSession.subscription,
+						stripeCustomerId: stripeSubscription.customer as string,
+						createdAt: new Date().toISOString(),
+						updatedAt: new Date().toISOString()
+					};
+
+					await this.userSubscriptionsRepository.create(subscriptionData);
+					console.log(`Created local subscription record for user ${userId}, plan ${planId}`);
+				} catch (error) {
+					console.error('Error handling checkout session completion:', error);
+				}
+			}
+		}
+	}
+
 	private async handleSubscriptionUpdated(stripeSubscription: any) {
+		console.log('Subscription updated:', stripeSubscription.id);
+		console.log('Subscription metadata:', JSON.stringify(stripeSubscription.metadata, null, 2));
+		
 		// Find subscription by Stripe ID and update
 		const subscriptions = await this.userSubscriptionsRepository.findAll();
-		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+		let subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+		
+		// If subscription doesn't exist locally but has metadata, create it
+		if (!subscription && stripeSubscription.metadata?.userId) {
+			console.log('Creating subscription from metadata in subscription.updated webhook');
+			const userId = stripeSubscription.metadata.userId;
+			const planId = stripeSubscription.metadata.planId;
+			const billingCycle = stripeSubscription.metadata.billingCycle;
+			
+			if (userId && planId && billingCycle) {
+				const subscriptionData: InsertUserSubscription = {
+					id: crypto.randomUUID(),
+					userId,
+					planId,
+					billingCycle: billingCycle as 'monthly' | 'yearly',
+					status: stripeSubscription.status as any,
+					currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+					currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+					stripeSubscriptionId: stripeSubscription.id,
+					stripeCustomerId: stripeSubscription.customer as string,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				};
+
+				subscription = await this.userSubscriptionsRepository.create(subscriptionData);
+				console.log(`Created local subscription record from webhook for user ${userId}, plan ${planId}`);
+			}
+		}
 		
 		if (subscription) {
 			const updateData = {

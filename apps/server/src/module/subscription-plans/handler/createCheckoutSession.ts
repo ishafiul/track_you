@@ -4,50 +4,50 @@ import { HTTPException } from "hono/http-exception";
 import { authMiddleware } from "../../../middleware/auth";
 import { getBaseUrl } from "../../../utils/url";
 
-// Request schema for creating payment link
-const CreatePaymentLinkSchema = z.object({
+// Request schema for creating checkout session
+const CreateCheckoutSessionSchema = z.object({
   planId: z.string().min(1),
   billingCycle: z.enum(['monthly', 'yearly']),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
-}).openapi("CreatePaymentLinkRequest");
+}).openapi("CreateCheckoutSessionRequest");
 
 // Response schema
-const CreatePaymentLinkResponseSchema = z.object({
+const CreateCheckoutSessionResponseSchema = z.object({
   success: z.boolean(),
-  paymentLink: z.string().optional(),
+  checkoutUrl: z.string().optional(),
   error: z.string().optional(),
-}).openapi("CreatePaymentLinkResponse");
+}).openapi("CreateCheckoutSessionResponse");
 
 export default (app: HonoApp) =>
   app.openapi(
     createRoute({
       method: "post",
-      path: "/subscription-plans/payment-link",
+      path: "/subscription-plans/checkout-session",
       tags: ["Subscription Plans"],
       security: [{AUTH: []}],
       middleware: [authMiddleware],
-      description: "Create a Stripe payment link for a subscription plan with specific billing cycle",
+      description: "Create a Stripe checkout session for a subscription plan with metadata support",
       request: {
         body: {
           content: {
             "application/json": {
-              schema: CreatePaymentLinkSchema,
+              schema: CreateCheckoutSessionSchema,
             },
           },
         },
       },
       responses: {
         200: {
-          description: "Payment link created successfully",
+          description: "Checkout session created successfully",
           content: {
-            "application/json": { schema: CreatePaymentLinkResponseSchema },
+            "application/json": { schema: CreateCheckoutSessionResponseSchema },
           },
         },
         400: {
           description: "Bad request or plan not found",
           content: {
-            "application/json": { schema: CreatePaymentLinkResponseSchema },
+            "application/json": { schema: CreateCheckoutSessionResponseSchema },
           },
         },
         500: {
@@ -62,24 +62,30 @@ export default (app: HonoApp) =>
       try {
         const billingService = await c.env.BILLING_SERVICE.billing();
         const bodyJson = await c.req.json();
-        const body = CreatePaymentLinkSchema.parse(bodyJson);
-        const { workerUrl,workerHost } = getBaseUrl(c);
-        const payload = c.get('auth');
-        if (!payload?.userId) {
+        const body = CreateCheckoutSessionSchema.parse(bodyJson);
+        const { workerUrl, workerHost } = getBaseUrl(c);
+        const auth = c.get('auth');
+        const user = c.get('user');
+        
+        if (!auth?.userId) {
           throw new HTTPException(401, { message: 'Unauthorized' });
         }
-        const result = await billingService.createPaymentLinkForPlan({
+
+        const result = await billingService.createCheckoutSessionForPlan({
           planId: body.planId,
           billingCycle: body.billingCycle,
+          userEmail: user?.email || '',
           successUrl: body.successUrl,
           cancelUrl: body.cancelUrl,
           metadata: {
             host: workerHost,
-            userId: payload?.userId,
+            userId: auth.userId,
             planId: body.planId,
-            billingCycle: body.billingCycle
+            billingCycle: body.billingCycle,
+            source: 'checkout_session'
           }
         });
+
         if (!result.success) {
           return c.json({
             success: false,
@@ -89,10 +95,11 @@ export default (app: HonoApp) =>
 
         return c.json({
           success: true,
-          paymentLink: result.paymentLink
+          checkoutUrl: result.checkoutUrl
         }, 200);
       } catch (error) {
-        throw new HTTPException(500, { message: "Failed to create payment link" });
+        console.error('Error creating checkout session:', error);
+        throw new HTTPException(500, { message: "Failed to create checkout session" });
       }
     }
   ); 

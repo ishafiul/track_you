@@ -83,23 +83,43 @@ export function Pricing() {
         return;
       }
 
-      const data = await httpClient.post<{success: boolean, paymentLink?: string, error?: string}>('/subscription-plans/payment-link', {
+      // Use the new checkout session endpoint with better metadata handling
+      const data = await httpClient.post<{success: boolean, checkoutUrl?: string, error?: string}>('/subscription-plans/checkout-session', {
         planId,
         billingCycle: cycle,
         successUrl: `${window.location.origin}/dashboard?payment=success`,
         cancelUrl: `${window.location.origin}/pricing?payment=cancelled`,
       });
 
-      if (data.success && data.paymentLink) {
-        window.location.href = data.paymentLink;
+      if (data.success && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
-        alert('Failed to create payment link: ' + (data.error || 'Unknown error'));
+        alert('Failed to create checkout session: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error creating payment link:', error);
-      alert('Failed to create payment link');
+      console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session');
     } finally {
       setIsCheckingAuth(false);
+    }
+  };
+
+  // Helper function to get user email from the API
+  const getUserEmail = async (): Promise<string | null> => {
+    try {
+      // Option 1: Check if we stored user data during login
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        return parsed.email || null;
+      }
+
+      // Option 2: Make an API call to get current user profile
+      const userProfile = await httpClient.get<{email: string}>('/users/me');
+      return userProfile.email;
+    } catch (error) {
+      console.error('Error getting user email:', error);
+      return null;
     }
   };
 

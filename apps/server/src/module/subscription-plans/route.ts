@@ -8,6 +8,7 @@ import getActiveSubscriptionPlansWithPricing from "./handler/getActiveSubscripti
 import getAllSubscriptionPlans from "./handler/getAllSubscriptionPlans";
 import getSubscriptionPlan from "./handler/getSubscriptionPlan";
 import updateSubscriptionPlan from "./handler/updateSubscriptionPlan";
+import createCheckoutSession from "./handler/createCheckoutSession";
 
 export default function subscriptionPlansRoute(app: HonoApp) {
   // Register specific routes first (before parameterized routes)
@@ -15,7 +16,7 @@ export default function subscriptionPlansRoute(app: HonoApp) {
   getAllSubscriptionPlans(app);
   getActiveSubscriptionPlans(app);
   getActiveSubscriptionPlansWithPricing(app);
-  
+  createCheckoutSession(app);
   // Register parameterized routes last
   createSubscriptionPlan(app);
   getSubscriptionPlan(app);
