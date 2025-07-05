@@ -1,0 +1,119 @@
+---
+description: 
+globs: apps/workers/permission-manager/**
+alwaysApply: false
+---
+Abstract
+We present a robust, key–value (KV)–based, JSON‑backed, fine‑grained authorization system inspired by Google’s Zanzibar and OpenFGA. By encoding relationship tuples, group‑membership, role definitions, and object metadata as JSON documents in a KV store, we achieve both simplicity and high performance. We describe the data model, key layouts, authorization algorithms, and optimization strategies, and discuss how this design meets the requirements of scalability, consistency, and low latency.
+
+1 Introduction
+Fine‑grained authorization (FGA) enables applications to grant or deny individual actions on individual resources, rather than relying on coarse role‑based access control (RBAC) alone. OpenFGA is an open‑source FGA system offering a relationship‑based model and friendly APIs for millions of objects and users 
+openfga.dev
+. Google’s Zanzibar paper describes a globally distributed, consistent authorization service at Google scale—processing 10 million queries/sec with <10 ms latency 
+Google Research
+.
+
+While SQL‑based implementations can leverage joins and recursive queries, KV stores (e.g. Redis, BadgerDB, RocksDB) require careful key design to support efficient access checks. We propose a JSON‑centric KV schema that captures all necessary relationship data in a small number of lookups, minimizing latency and complexity.
+
+2 Background and Related Work
+Zanzibar defines a namespace configuration language and stores relationship triples (subject, relation, object) in a centralized service, supporting arbitrary relation graphs and hierarchical resources 
+USENIX
+. OpenFGA externalizes authorization logic from applications, models ReBAC, and provides scalable storage and querying of tuples 
+openfga.dev
+.
+
+Relationship‑based access control (ReBAC) generalizes RBAC by allowing edges in a graph to represent permissions; authorization checks traverse this graph 
+Wikipedia
+. Unlike ABAC or RBAC, ReBAC can express “user A is an editor because A is in group G, which is an editor of doc D.”
+
+3 System Model
+We assume a KV store that holds JSON values under string keys. Our model comprises four JSON document types:
+
+Relationship Tuples (rel:{type}:{id})
+
+Group Memberships (group_membership:{user})
+
+Role Definitions (role_def:{type}:{role})
+
+Object Metadata (meta:{type}:{id})
+
+Subjects are users (user:123) or groups (group:marketing). Objects have types (e.g. document) and IDs (e.g. 456). Roles (e.g. editor) map to permissions (e.g. ["read","write"]).
+
+4 Key‑Value Schema
+Document	Key Pattern	JSON Value Structure
+Relationship Tuples	rel:{type}:{id}	{ direct: {user→role}, groups: {group→role} }
+Group Membership	group_membership:{user}	["group1","group2",…]
+Role Definition	role_def:{type}:{role}	{ permissions: […], inherits: […] }
+Object Metadata	meta:{type}:{id}	{ owner, created_at, tags, … }
+
+Example – rel:document:456:
+
+json
+Copy
+Edit
+{
+  "direct":   { "user:123":"editor", "user:888":"owner" },
+  "groups":   { "group:marketing":"viewer" }
+}
+5 Authorization Algorithm
+To evaluate “Can user U perform permission P on object O of type T?”:
+
+Load group memberships:
+
+ini
+Copy
+Edit
+G = JSON.GET group_membership:U  
+Load relationships:
+
+ini
+Copy
+Edit
+R = JSON.GET rel:T:O  
+Collect roles:
+
+If R.direct[U] exists → add that role.
+
+For each g∈G, if R.groups[g] exists → add that role.
+
+Resolve role inheritance recursively via role_def:T:role.
+
+Aggregate permissions across all roles and inherited roles.
+
+Check whether P ∈ aggregated permissions.
+
+This requires only two JSON.GETs (group_membership and rel), plus N JSON.GETs for N distinct roles (usually small).
+
+6 Extensibility and Optimizations
+Time‑limited roles: add expires_at fields in rel:* JSON.
+
+Wildcard support: define rel:{type}:* for global roles.
+
+Reverse index (access_index:{type}:{id}) for listing subjects, built asynchronously.
+
+Caching: store computed (U,O)→permissions in a short‑TTL cache.
+
+Sharding: split keys by object hash for extreme scale.
+
+7 Discussion
+Our KV+JSON design combines the flexibility of document models with the performance of KV stores. Compared to SQL—with joins and recursive CTEs—our approach minimizes round‑trip counts at the cost of slightly larger JSON values. In practice, JSON parsing in RedisJSON or BadgerDB is sub‑millisecond, enabling sub‑10 ms checks 
+Oso: Authorization as a Service
+.
+
+By co‑locating direct and group-based roles in one document, we avoid multiple key lookups. Inheritance in roles allows rich policy expression without complicating reads: inherited permissions are resolved in‑memory.
+
+8 Conclusion
+We have described a production‑grade KV‑based, JSON‑backed FGA system inspired by Zanzibar and OpenFGA. Our design achieves fine‑grained, relationship‑based access control with minimal KV operations, supports inheritance, wildcards, TTLs, and auditing. It can serve as the core of modern microservices, mobile backends, and SaaS platforms requiring robust authorization.
+
+References
+Pang, R., Caceres, R., Burrows, M., Chen, Z., & Dave, P. “Zanzibar: Google’s Consistent, Global Authorization System.” USENIX ATC ’19.
+
+OpenFGA. “Authorization Concepts.” OpenFGA Docs. 
+openfga.dev
+
+Steele, J. P. “Real‑World Authorization Lessons with OpenFGA.” (2025) 
+joshuapsteele.com
+
+Gates, C. E. “Access control requirements for web 2.0 security and privacy.” IEEE Web, 2007. 
+Wikipedia
+

@@ -70,6 +70,8 @@ export function DashboardContent() {
   const [plansLoading, setPlansLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -180,6 +182,45 @@ export function DashboardContent() {
     }
   };
 
+  const handleCancelSubscription = async (cancelAtPeriodEnd: boolean = true) => {
+    if (!subscription?.id) return;
+    
+    setCancelLoading(true);
+    try {
+      const data = await httpClient.patch<{
+        success: boolean, 
+        subscription?: Subscription, 
+        message?: string, 
+        error?: string
+      }>(`/user-subscriptions/${subscription.id}/cancel`, {
+        cancelAtPeriodEnd
+      });
+
+      if (data.success) {
+        setPaymentMessage({
+          type: 'success', 
+          text: data.message || 'Subscription canceled successfully'
+        });
+        setShowCancelDialog(false);
+        // Refresh subscription data
+        await fetchUserSubscription();
+      } else {
+        setPaymentMessage({
+          type: 'error', 
+          text: data.error || 'Failed to cancel subscription'
+        });
+      }
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      setPaymentMessage({
+        type: 'error', 
+        text: 'Failed to cancel subscription'
+      });
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return `$${price.toFixed(0)}`;
   };
@@ -197,7 +238,15 @@ export function DashboardContent() {
     
     const currentTier = getPlanTier(plan.name);
     const upgrades = availablePlans.filter(p => getPlanTier(p.name) > currentTier);
-    const downgrades = availablePlans.filter(p => getPlanTier(p.name) < currentTier && getPlanTier(p.name) > 0);
+    
+    // Don't show downgrades if user is on free plan, and don't include free plan in downgrades
+    const downgrades = currentTier > 0 
+      ? availablePlans.filter(p => 
+          getPlanTier(p.name) < currentTier && 
+          getPlanTier(p.name) > 0 &&
+          !p.name.toLowerCase().includes('free')
+        )
+      : [];
     
     return { upgrades, downgrades };
   };
@@ -364,7 +413,30 @@ export function DashboardContent() {
                         }`}>
                           {subscription.status}
                         </span>
+                        {subscription.cancelAtPeriodEnd && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            (Cancels at period end)
+                          </span>
+                        )}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Cancel Subscription Button - Only show for active paid subscriptions */}
+                  {subscription && plan && 
+                   subscription.status === 'active' && 
+                   !subscription.cancelAtPeriodEnd && 
+                   plan.name.toLowerCase() !== 'free' &&
+                   subscription.planId !== 'free-plan' && (
+                    <div className="border-t pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCancelDialog(true)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Cancel Subscription
+                      </Button>
                     </div>
                   )}
 
@@ -519,6 +591,71 @@ export function DashboardContent() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Cancel Subscription Dialog */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancel Subscription</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to cancel your subscription? You can choose when to cancel:
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex flex-col space-y-3">
+                <Button
+                  onClick={() => handleCancelSubscription(true)}
+                  disabled={cancelLoading}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {cancelLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    'Cancel at Period End (Recommended)'
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  You'll keep access until {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'the end of your billing period'}
+                </p>
+                
+                <Button
+                  onClick={() => handleCancelSubscription(false)}
+                  disabled={cancelLoading}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {cancelLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    'Cancel Immediately'
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Your subscription will be canceled immediately and you'll lose access
+                </p>
+              </div>
+              
+              <div className="flex space-x-3 pt-4 border-t">
+                <Button
+                  onClick={() => setShowCancelDialog(false)}
+                  disabled={cancelLoading}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Keep Subscription
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

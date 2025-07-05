@@ -8,6 +8,7 @@ import getSubscriptionsByPlan from "./handler/getSubscriptionsByPlan";
 import getUserActiveSubscription from "./handler/getUserActiveSubscription";
 import getUserSubscription from "./handler/getUserSubscription";
 import getUserSubscriptions from "./handler/getUserSubscriptions";
+import getUserPlanStatus from "./handler/getUserPlanStatus";
 import reactivateUserSubscription from "./handler/reactivateUserSubscription";
 import renewSubscription from "./handler/renewSubscription";
 import subscribeUserToPlan from "./handler/subscribeUserToPlan";
@@ -15,6 +16,7 @@ import updateUserSubscription from "./handler/updateUserSubscription";
 import upgradePlan from "./handler/upgradePlan";
 import initiateSubscription from "./handler/initiateSubscription";
 import stripeWebhook from "./handler/stripeWebhook";
+import fixFreePlanStatus from "./handler/fixFreePlanStatus";
 
 
 export default function userSubscriptionsRoute(app: HonoApp) {
@@ -24,6 +26,7 @@ export default function userSubscriptionsRoute(app: HonoApp) {
   getUserSubscription(app);
   getUserSubscriptions(app);
   getUserActiveSubscription(app);
+  getUserPlanStatus(app);
   getSubscriptionsByPlan(app);
   getExpiringSubscriptions(app);
   updateUserSubscription(app);
@@ -34,4 +37,5 @@ export default function userSubscriptionsRoute(app: HonoApp) {
   upgradePlan(app);
   renewSubscription(app);
   checkUserAccess(app);
+  fixFreePlanStatus(app);
 } 

@@ -726,6 +726,39 @@ export class Billing extends RpcTarget {
 				}
 			);
 
+			console.log(`✅ USER PLAN UPDATED: User ${subscription.userId} plan status changed to '${stripeSubscription.status}' for plan ${subscription.planId}`);
+
+			// Handle specific status changes
+			switch (stripeSubscription.status) {
+				case 'past_due':
+					console.log(`⚠️ USER PLAN PAST DUE: User ${subscription.userId} has payment issues`);
+					// Could trigger email notification or grace period logic
+					break;
+				case 'unpaid':
+					console.log(`🚫 USER PLAN SUSPENDED: User ${subscription.userId} access suspended due to unpaid subscription`);
+					// User access should be restricted
+					break;
+				case 'canceled':
+					console.log(`❌ USER PLAN CANCELLED: User ${subscription.userId} subscription was canceled`);
+					// Handle cleanup if needed
+					break;
+				case 'active':
+					console.log(`✅ USER PLAN ACTIVE: User ${subscription.userId} has full access to plan ${subscription.planId}`);
+					// Ensure user has full access
+					break;
+				case 'trialing':
+					console.log(`🔄 USER PLAN TRIAL: User ${subscription.userId} is in trial period for plan ${subscription.planId}`);
+					break;
+				case 'incomplete':
+					console.log(`⏳ USER PLAN PENDING: User ${subscription.userId} payment action required for plan ${subscription.planId}`);
+					break;
+				case 'incomplete_expired':
+					console.log(`💀 USER PLAN EXPIRED: User ${subscription.userId} incomplete period expired for plan ${subscription.planId}`);
+					break;
+				default:
+					console.log(`🔄 USER PLAN STATUS CHANGE: User ${subscription.userId} plan status changed to ${stripeSubscription.status} for plan ${subscription.planId}`);
+			}
+
 			return { success: true, subscription: updatedSubscription };
 		} catch (error) {
 			console.error('Error syncing subscription with Stripe:', error);
@@ -753,13 +786,23 @@ export class Billing extends RpcTarget {
 			);
 
 			// Update local subscription
+			const updateData: any = {
+				status: stripeSubscription.status as any,
+				cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+				updatedAt: new Date().toISOString()
+			};
+
+			// If immediate cancellation, revert to free plan
+			if (!cancelAtPeriodEnd) {
+				updateData.planId = 'free-plan';
+				updateData.status = 'active'; // Free plan is always active
+				updateData.stripeSubscriptionId = null; // Remove Stripe reference
+				updateData.stripeCustomerId = null;
+			}
+
 			const updatedSubscription = await this.userSubscriptionsRepository.update(
 				subscriptionId,
-				{
-					status: stripeSubscription.status as any,
-					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-					updatedAt: new Date().toISOString()
-				}
+				updateData
 			);
 
 			return { success: true, subscription: updatedSubscription };
@@ -812,267 +855,229 @@ export class Billing extends RpcTarget {
 		error?: string;
 		
 	}> {
-	
+
 		try {
 			const event = await this.stripeService.constructWebhookEvent(
 				payload,
 				signature,
 				this.#env.STRIPE_WEBHOOK_SECRET
 			);
-
-			// Check if event metadata contains host and matches workerHost
-			// Only filter if host is explicitly set and doesn't match
-			const eventObj = event.data.object as any;
-			const eventHost = eventObj?.metadata?.host;
 			
-			console.log(`Event type: ${event.type}, Event host: ${eventHost || 'none'}, Worker host: ${workerHost}`);
-			
-			// Only ignore if host is explicitly set and doesn't match
-			if (eventHost && eventHost !== workerHost) {
-				console.log(`Ignoring event due to host mismatch - event: ${eventHost}, worker: ${workerHost}`);
-				return { 
-					success: true, 
-					message: `Event ignored - host mismatch (event: ${eventHost}, worker: ${workerHost})` 
-				};
-			}
-
+			// Process the event based on its type
 			switch (event.type) {
+				case 'checkout.session.completed':
+					await this.handleCheckoutSessionCompleted(event.data.object);
+					break;
 				case 'customer.subscription.created':
+					await this.handleSubscriptionCreated(event.data.object);
+					break;
 				case 'customer.subscription.updated':
-					await this.handleSubscriptionUpdated(event.data.object as any);
+					await this.handleSubscriptionUpdated(event.data.object);
 					break;
 				case 'customer.subscription.deleted':
-					await this.handleSubscriptionDeleted(event.data.object as any);
-					break;
-				case 'checkout.session.completed':
-					await this.handleCheckoutSessionCompleted(event.data.object as any);
+					await this.handleSubscriptionDeleted(event.data.object);
 					break;
 				case 'invoice.payment_succeeded':
-					await this.handleInvoicePaymentSucceeded(event.data.object as any);
+					await this.handleInvoicePaymentSucceeded(event.data.object);
 					break;
 				case 'invoice.payment_failed':
-					await this.handleInvoicePaymentFailed(event.data.object as any);
-					break;
-				case 'invoice.payment_action_required':
-					await this.handleInvoicePaymentActionRequired(event.data.object as any);
-					break;
-				case 'customer.subscription.trial_will_end':
-					await this.handleSubscriptionTrialWillEnd(event.data.object as any);
+					await this.handleInvoicePaymentFailed(event.data.object);
 					break;
 				default:
-					console.log(`Unhandled event type: ${event.type}`);
+					console.log('Unhandled event type:', event.type);
 			}
 
-			return { success: true, message: `Handled ` };
+			return { success: true, message: `Processed ${event.type} event` };
 		} catch (error) {
-			console.error('Error handling Stripe webhook:', error);
-			const errorMessage = 'Failed to handle webhook';
+			console.error('❌ Error handling Stripe webhook:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown webhook error';
 			return { success: false, error: errorMessage };
 		}
 	}
 
 	private async handleCheckoutSessionCompleted(checkoutSession: any) {
-		console.log('Checkout session completed:', checkoutSession.id);
-		console.log('Checkout session metadata:', JSON.stringify(checkoutSession.metadata, null, 2));
-		
 		// If this checkout session created a subscription, we need to create our local subscription record
 		if (checkoutSession.subscription && checkoutSession.metadata) {
 			const userId = checkoutSession.metadata.userId;
 			const planId = checkoutSession.metadata.planId;
 			const billingCycle = checkoutSession.metadata.billingCycle;
-			const host = checkoutSession.metadata.host;
-			
-			console.log(`Processing subscription creation for user: ${userId}, plan: ${planId}, cycle: ${billingCycle}`);
 			
 			if (userId && planId && billingCycle) {
-				try {
-					// Get the subscription from Stripe to get full details
-					const stripeSubscription = await this.stripeService.getSubscription(checkoutSession.subscription);
-					
-					console.log('Stripe subscription metadata:', JSON.stringify(stripeSubscription.metadata, null, 2));
-					
-					// Create local subscription record
-					const subscriptionData: InsertUserSubscription = {
-						id: crypto.randomUUID(),
-						userId,
-						planId,
-						billingCycle: billingCycle as 'monthly' | 'yearly',
-						status: stripeSubscription.status as any,
-						currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-						currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-						cancelAtPeriodEnd: false,
-						stripeSubscriptionId: checkoutSession.subscription,
-						stripeCustomerId: stripeSubscription.customer as string,
-						createdAt: new Date().toISOString(),
-						updatedAt: new Date().toISOString()
-					};
+				const subscriptionData = {
+					id: crypto.randomUUID(),
+					userId,
+					planId,
+					billingCycle: billingCycle as 'monthly' | 'yearly',
+					status: 'incomplete' as const,
+					currentPeriodStart: new Date().toISOString(),
+					currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+					cancelAtPeriodEnd: false,
+					stripeSubscriptionId: checkoutSession.subscription,
+					stripeCustomerId: checkoutSession.customer,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				};
 
-					await this.userSubscriptionsRepository.create(subscriptionData);
-					console.log(`Created local subscription record for user ${userId}, plan ${planId}`);
-				} catch (error) {
-					console.error('Error handling checkout session completion:', error);
-				}
+				await this.userSubscriptionsRepository.create(subscriptionData);
+				console.log(`✅ Subscription created for user ${userId} on plan ${planId}`);
+			}
+		}
+	}
+
+	private async handleSubscriptionCreated(stripeSubscription: any) {
+		// Find existing subscription by user ID and update it with Stripe details
+		if (stripeSubscription.metadata && stripeSubscription.metadata.userId) {
+			const userId = stripeSubscription.metadata.userId;
+			const planId = stripeSubscription.metadata.planId;
+			const billingCycle = stripeSubscription.metadata.billingCycle;
+			
+			// Find the existing subscription for this user
+			const existingSubscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
+			
+			if (existingSubscription) {
+				// Update the existing subscription with new plan and Stripe details
+				// Preserve 'active' status if payment has already succeeded
+				const newStatus = existingSubscription.status === 'active' ? 'active' : stripeSubscription.status;
+				
+				const updateData = {
+					planId: planId, // Update the plan ID (this handles upgrades)
+					billingCycle: billingCycle as 'monthly' | 'yearly',
+					status: newStatus, // Don't downgrade from 'active' to 'incomplete'
+					currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+					currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+					stripeSubscriptionId: stripeSubscription.id,
+					stripeCustomerId: stripeSubscription.customer,
+					updatedAt: new Date().toISOString()
+				};
+
+				await this.userSubscriptionsRepository.update(existingSubscription.id, updateData);
+				console.log(`✅ User ${userId} plan updated to ${planId} with status: ${newStatus}`);
+			} else {
+				// No existing subscription found - create a new one (this handles new users or direct Stripe subscriptions)
+				const subscriptionData = {
+					id: crypto.randomUUID(),
+					userId,
+					planId,
+					billingCycle: billingCycle as 'monthly' | 'yearly',
+					status: stripeSubscription.status,
+					currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+					currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+					stripeSubscriptionId: stripeSubscription.id,
+					stripeCustomerId: stripeSubscription.customer,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				};
+
+				await this.userSubscriptionsRepository.create(subscriptionData);
+				console.log(`✅ User ${userId} subscribed to plan ${planId} with status: ${stripeSubscription.status}`);
 			}
 		}
 	}
 
 	private async handleSubscriptionUpdated(stripeSubscription: any) {
-		console.log('Subscription updated:', stripeSubscription.id);
-		console.log('Subscription metadata:', JSON.stringify(stripeSubscription.metadata, null, 2));
-		
-		// Find subscription by Stripe ID and update
-		const subscriptions = await this.userSubscriptionsRepository.findAll();
-		let subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
-		
-		// If subscription doesn't exist locally but has metadata, create it
-		if (!subscription && stripeSubscription.metadata?.userId) {
-			console.log('Creating subscription from metadata in subscription.updated webhook');
-			const userId = stripeSubscription.metadata.userId;
-			const planId = stripeSubscription.metadata.planId;
-			const billingCycle = stripeSubscription.metadata.billingCycle;
-			
-			if (userId && planId && billingCycle) {
-				const subscriptionData: InsertUserSubscription = {
-					id: crypto.randomUUID(),
-					userId,
-					planId,
-					billingCycle: billingCycle as 'monthly' | 'yearly',
-					status: stripeSubscription.status as any,
-					currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-					currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-					cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-					stripeSubscriptionId: stripeSubscription.id,
-					stripeCustomerId: stripeSubscription.customer as string,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString()
-				};
-
-				subscription = await this.userSubscriptionsRepository.create(subscriptionData);
-				console.log(`Created local subscription record from webhook for user ${userId}, plan ${planId}`);
-			}
-		}
-		
-		if (subscription) {
-			const updateData = {
-				status: stripeSubscription.status,
-				currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-				currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-				cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-				updatedAt: new Date().toISOString()
-			};
-
-			await this.userSubscriptionsRepository.update(subscription.id, updateData);
-
-			// Handle specific status changes
-			switch (stripeSubscription.status) {
-				case 'past_due':
-					console.log(`Subscription ${subscription.id} is past due - user ${subscription.userId} has payment issues`);
-					// Could trigger email notification or grace period logic
-					break;
-				case 'unpaid':
-					console.log(`Subscription ${subscription.id} is unpaid - suspending access for user ${subscription.userId}`);
-					// User access should be restricted
-					break;
-				case 'canceled':
-					console.log(`Subscription ${subscription.id} was canceled for user ${subscription.userId}`);
-					// Handle cleanup if needed
-					break;
-				case 'active':
-					console.log(`Subscription ${subscription.id} is active for user ${subscription.userId}`);
-					// Ensure user has full access
-					break;
-				case 'trialing':
-					console.log(`Subscription ${subscription.id} is in trial for user ${subscription.userId}`);
-					break;
-				case 'incomplete':
-					console.log(`Subscription ${subscription.id} is incomplete for user ${subscription.userId} - payment action required`);
-					break;
-				case 'incomplete_expired':
-					console.log(`Subscription ${subscription.id} incomplete period expired for user ${subscription.userId}`);
-					break;
-				default:
-					console.log(`Subscription ${subscription.id} status changed to ${stripeSubscription.status} for user ${subscription.userId}`);
-			}
-		}
-	}
-
-	private async handleSubscriptionDeleted(stripeSubscription: any) {
-		// Find subscription by Stripe ID and mark as canceled
+		// Find and update the subscription
 		const subscriptions = await this.userSubscriptionsRepository.findAll();
 		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
 		
 		if (subscription) {
 			await this.userSubscriptionsRepository.update(subscription.id, {
-				status: 'canceled',
+				status: stripeSubscription.status,
+				currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+				currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+				cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
 				updatedAt: new Date().toISOString()
 			});
 		}
 	}
 
-	private async handleInvoicePaymentSucceeded(invoice: any) {
-		console.log('Invoice payment succeeded:', invoice.id);
+	private async handleSubscriptionDeleted(stripeSubscription: any) {
+		// Find and update the subscription
+		const subscriptions = await this.userSubscriptionsRepository.findAll();
+		const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
 		
+		if (subscription) {
+			// When subscription is deleted/canceled, revert user to free plan with active status
+			await this.userSubscriptionsRepository.update(subscription.id, {
+				planId: 'free-plan', // Revert to free plan
+				status: 'active', // Free plan is always active
+				cancelAtPeriodEnd: false,
+				stripeSubscriptionId: null, // Remove Stripe reference
+				stripeCustomerId: null,
+				updatedAt: new Date().toISOString()
+			});
+			console.log(`✅ User ${subscription.userId} subscription canceled, reverted to active free plan`);
+		}
+	}
+
+	private async handleInvoicePaymentSucceeded(invoice: any) {
 		// If this is a subscription invoice, ensure the subscription is active
 		if (invoice.subscription) {
+			// First try to get the subscription from Stripe to get metadata
+			let userId = null;
+			try {
+				const stripeSubscription = await this.stripeService.getSubscription(invoice.subscription);
+				userId = stripeSubscription?.metadata?.userId;
+			} catch (error) {
+				console.log('Could not fetch Stripe subscription metadata:', error);
+			}
+			
+			// Find subscription by user ID (most reliable method)
+			if (userId) {
+				const subscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
+				
+				if (subscription) {
+					// Update the subscription to active and ensure Stripe IDs are set
+					await this.userSubscriptionsRepository.update(subscription.id, {
+						stripeSubscriptionId: invoice.subscription,
+						stripeCustomerId: invoice.customer,
+						status: 'active',
+						updatedAt: new Date().toISOString()
+					});
+					console.log(`✅ User ${userId} plan ${subscription.planId} activated after payment`);
+					return;
+				}
+			}
+			
+			// Fallback: Try to find by Stripe IDs (original method)
 			const subscriptions = await this.userSubscriptionsRepository.findAll();
 			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
 			
-			if (subscription && subscription.status !== 'active') {
+			if (!subscription) {
+				// Try to find by customer ID if subscription ID doesn't match
+				const subscriptionByCustomer = subscriptions.find(s => s.stripeCustomerId === invoice.customer);
+				
+				if (subscriptionByCustomer) {
+					// Update the subscription with the Stripe subscription ID and make it active
+					await this.userSubscriptionsRepository.update(subscriptionByCustomer.id, {
+						stripeSubscriptionId: invoice.subscription,
+						status: 'active',
+						updatedAt: new Date().toISOString()
+					});
+					console.log(`✅ User ${subscriptionByCustomer.userId} plan ${subscriptionByCustomer.planId} activated after payment`);
+				}
+			} else if (subscription.status !== 'active') {
 				await this.userSubscriptionsRepository.update(subscription.id, {
 					status: 'active',
 					updatedAt: new Date().toISOString()
 				});
-				console.log(`Reactivated subscription ${subscription.id} after successful payment`);
+				console.log(`✅ User ${subscription.userId} plan ${subscription.planId} reactivated after payment`);
 			}
 		}
 	}
 
 	private async handleInvoicePaymentFailed(invoice: any) {
-		console.log('Invoice payment failed:', invoice.id);
-		
-		// If this is a subscription invoice, handle the payment failure
-		if (invoice.subscription) {
-			const subscriptions = await this.userSubscriptionsRepository.findAll();
-			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
-			
-			if (subscription) {
-				// Check the attempt count and billing reason
-				const attemptCount = invoice.attempt_count || 0;
-				const nextPaymentAttempt = invoice.next_payment_attempt;
-				
-				if (attemptCount >= 4 || !nextPaymentAttempt) {
-					// Final attempt failed - suspend the subscription
-					await this.userSubscriptionsRepository.update(subscription.id, {
-						status: 'unpaid',
-						updatedAt: new Date().toISOString()
-					});
-					console.log(`Suspended subscription ${subscription.id} after ${attemptCount} failed payment attempts`);
-				} else {
-					// Mark as past_due but keep trying
-					await this.userSubscriptionsRepository.update(subscription.id, {
-						status: 'past_due',
-						updatedAt: new Date().toISOString()
-					});
-					console.log(`Marked subscription ${subscription.id} as past_due, attempt ${attemptCount}/4`);
-				}
-			}
-		}
-	}
-
-	private async handleInvoicePaymentActionRequired(invoice: any) {
-		console.log('Invoice payment action required:', invoice.id);
-		
-		// When payment requires additional action (like 3D Secure)
+		// If this is a subscription invoice, mark the subscription as past due
 		if (invoice.subscription) {
 			const subscriptions = await this.userSubscriptionsRepository.findAll();
 			const subscription = subscriptions.find(s => s.stripeSubscriptionId === invoice.subscription);
 			
 			if (subscription) {
 				await this.userSubscriptionsRepository.update(subscription.id, {
-					status: 'incomplete',
+					status: 'past_due',
 					updatedAt: new Date().toISOString()
 				});
-				console.log(`Marked subscription ${subscription.id} as incomplete - payment action required`);
 			}
 		}
 	}
@@ -1197,6 +1202,89 @@ export class Billing extends RpcTarget {
 			console.error('Error updating plan pricing:', error);
 			const errorMessage = error instanceof Error ? error.message : 'Failed to update plan pricing';
 			return { success: false, error: errorMessage };
+		}
+	}
+
+	// User Plan Status Methods
+	async getUserPlanStatus(userId: string): Promise<{
+		success: boolean;
+		status: string | null;
+		planId: string | null;
+		subscription?: SelectUserSubscription;
+		error?: string;
+	}> {
+		try {
+			const subscription = await this.userSubscriptionsRepository.findActiveByUserId(userId);
+			if (!subscription) {
+				return {
+					success: true,
+					status: null,
+					planId: null,
+					error: 'No subscription found for user'
+				};
+			}
+
+			return {
+				success: true,
+				status: subscription.status,
+				planId: subscription.planId,
+				subscription
+			};
+		} catch (error) {
+			console.error('Error getting user plan status:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to get user plan status';
+			return {
+				success: false,
+				status: null,
+				planId: null,
+				error: errorMessage
+			};
+		}
+	}
+
+	// Fix free plans that are in canceled status
+	async fixFreePlanStatuses(): Promise<{
+		success: boolean;
+		fixedCount: number;
+		message: string;
+		error?: string;
+	}> {
+		try {
+			const allSubscriptions = await this.userSubscriptionsRepository.findAll();
+			
+			// Find free plans that are not active
+			const brokenFreePlans = allSubscriptions.filter(sub => 
+				sub.planId === 'free-plan' && sub.status !== 'active'
+			);
+
+			let fixedCount = 0;
+
+			// Fix each broken free plan
+			for (const subscription of brokenFreePlans) {
+				await this.userSubscriptionsRepository.update(subscription.id, {
+					status: 'active',
+					cancelAtPeriodEnd: false,
+					stripeSubscriptionId: null,
+					stripeCustomerId: null,
+					updatedAt: new Date().toISOString()
+				});
+				fixedCount++;
+			}
+
+			return {
+				success: true,
+				fixedCount,
+				message: `Fixed ${fixedCount} free plan subscriptions`
+			};
+		} catch (error) {
+			console.error('Error fixing free plan statuses:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Failed to fix free plan statuses';
+			return {
+				success: false,
+				fixedCount: 0,
+				message: 'Failed to fix free plan statuses',
+				error: errorMessage
+			};
 		}
 	}
 }

@@ -1,5 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: apps/workers/**
 alwaysApply: false
 ---
+- [Cloudflare Developer Documentation](https://developers.cloudflare.com/llms.txt)

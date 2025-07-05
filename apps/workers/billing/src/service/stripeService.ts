@@ -181,7 +181,92 @@ export class StripeService {
 
 	// Webhook handling
 	async constructWebhookEvent(payload: string, signature: string, endpointSecret: string): Promise<Stripe.Event> {
-		return await this.stripe.webhooks.constructEventAsync(payload, signature, endpointSecret);
+		try {
+			// Use our custom verification (avoiding ALL Stripe webhook methods)
+			await this.verifyWebhookSignature(payload, signature, endpointSecret);
+			
+			// Parse the event directly
+			const event = JSON.parse(payload) as Stripe.Event;
+			return event;
+		} catch (error) {
+			console.error('❌ StripeService: Error constructing webhook event:', error);
+			throw error;
+		}
+	}
+
+	private async verifyWebhookSignature(payload: string, signature: string, secret: string): Promise<void> {
+		const encoder = new TextEncoder();
+		
+		// Extract timestamp and signatures from header
+		const elements = signature.split(',');
+		let timestamp: string | null = null;
+		const signatures: string[] = [];
+		
+		for (const element of elements) {
+			const [key, value] = element.split('=');
+			if (key === 't') {
+				timestamp = value;
+			} else if (key === 'v1') {
+				signatures.push(value);
+			}
+		}
+		
+		if (!timestamp || signatures.length === 0) {
+			throw new Error('Invalid webhook signature format');
+		}
+		
+		// Create the signed payload
+		const signedPayload = `${timestamp}.${payload}`;
+		
+		// Import the secret key
+		const key = await crypto.subtle.importKey(
+			'raw',
+			encoder.encode(secret),
+			{ name: 'HMAC', hash: 'SHA-256' },
+			false,
+			['sign']
+		);
+		
+		// Generate the expected signature
+		const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
+		const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+			.map(b => b.toString(16).padStart(2, '0'))
+			.join('');
+		
+		// Verify the signature using timing-safe comparison
+		let isValid = false;
+		for (const sig of signatures) {
+			if (this.timingSafeEqual(sig, expectedSignature)) {
+				isValid = true;
+				break;
+			}
+		}
+		
+		if (!isValid) {
+			throw new Error('Webhook signature verification failed');
+		}
+		
+		// Check timestamp to prevent replay attacks (allow 5 minute tolerance)
+		const timestampMs = parseInt(timestamp) * 1000;
+		const now = Date.now();
+		const tolerance = 5 * 60 * 1000; // 5 minutes
+		
+		if (Math.abs(now - timestampMs) > tolerance) {
+			throw new Error('Webhook timestamp too old');
+		}
+	}
+
+	private timingSafeEqual(a: string, b: string): boolean {
+		if (a.length !== b.length) {
+			return false;
+		}
+		
+		let result = 0;
+		for (let i = 0; i < a.length; i++) {
+			result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+		}
+		
+		return result === 0;
 	}
 
 	// Checkout Session for one-time payments or subscriptions

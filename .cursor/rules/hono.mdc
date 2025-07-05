@@ -1,0 +1,6 @@
+---
+description: 
+globs: apps/server/**
+alwaysApply: false
+---
+- [developer documentation for Hono](https://hono.dev/llms-full.txt)

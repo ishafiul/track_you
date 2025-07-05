@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+this project a monorepo project.
+there is 2 type of project one is dart and flutter and one is node project with cloudflare worker and pages.
+
+for node or js project we are using pnpm workspace. so if you need run any comad realated to this run with `pnpm`
+
+for dart and flutter we are using melos for mono repo management.
+
