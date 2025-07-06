@@ -29,6 +29,8 @@
     "user-worker": "workspace:*",
     "billing-worker": "workspace:*",
     "location-worker": "workspace:*",
+    "api-keys-worker": "workspace:*",
+    "analytics-worker": "workspace:*",
     "typescript": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "wrangler": "catalog:"
