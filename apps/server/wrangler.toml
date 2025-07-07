@@ -10,6 +10,8 @@ services = [
   { binding = "PERMISSION_MANAGER", service = "permission-manager", entrypoint = "PermissionService" },
   { binding = "LOCATION_SERVICE", service = "track-you-location", entrypoint = "LocationService" },
   { binding = "BILLING_SERVICE", service = "track-you-billing", entrypoint = "BillingService" },
+  { binding = "API_KEY_SERVICE", service = "track-you-api-keys", entrypoint = "ApiKeyService" },
+  { binding = "ANALYTICS_SERVICE", service = "track-you-analytics", entrypoint = "AnalyticsService" },
 ]
 
 [vars]

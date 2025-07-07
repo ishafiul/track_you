@@ -5,4 +5,4 @@ compatibility_date = "2024-06-10"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-TURSO_URL = "libsql://api-keys-ishafiul.aws-ap-south-1.turso.io"
+TURSO_URL = "libsql://api-key-ishafiul.aws-ap-south-1.turso.io"

@@ -31,10 +31,7 @@ export default (app: HonoApp) =>
       path: '/api-keys',
       tags: ['API Keys'],
       description: 'Get all API keys for the authenticated user',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'view', (c) => c.get('user')?.id || ''),
-      ],
+      middleware: [authMiddleware, permissionMiddleware('api_key', 'api_key_manage', (c) => '*')],
       responses: {
         200: {
           description: "User's API keys",

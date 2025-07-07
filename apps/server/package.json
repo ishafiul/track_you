@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev src/index.ts",
-    "dev:all": "wrangler dev -c wrangler.toml -c ../workers/auth/wrangler.toml -c ../workers/billing/wrangler.toml  -c ../workers/location/wrangler.toml -c ../workers/mail/wrangler.toml -c ../workers/user/wrangler.toml -c ../workers/permission-manager/wrangler.jsonc",
+    "dev:all": "wrangler dev -c wrangler.toml -c ../workers/auth/wrangler.toml -c ../workers/billing/wrangler.toml  -c ../workers/location/wrangler.toml -c ../workers/mail/wrangler.toml -c ../workers/user/wrangler.toml -c ../workers/permission-manager/wrangler.jsonc -c ../workers/analytics/wrangler.toml -c ../workers/api-keys/wrangler.toml",
     "deploy": "wrangler deploy",
     "auth:migration:generate": "pnpx @better-auth/cli generate --config auth.config.ts --output src/db/schemas/auth.ts -y  && pnpm migration:generate",
     "migration:generate": "drizzle-kit generate",

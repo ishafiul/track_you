@@ -9,7 +9,7 @@
     "test": "vitest",
     "cf-typegen": "wrangler types",
     "generate": "npx drizzle-kit generate",
-    "migrate": "dotenvx run -f .env -- npx drizzle-kit migrate"
+    "migrate": "dotenvx run -f .env.local -- npx drizzle-kit migrate"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
@@ -28,4 +28,4 @@
     "tsx": "catalog:",
     "uuid": "catalog:"
   }
-} 
+}
