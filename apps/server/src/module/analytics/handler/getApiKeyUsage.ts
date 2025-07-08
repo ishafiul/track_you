@@ -2,7 +2,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { HonoApp, HonoContext } from '../../../type';
 import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
-import { permissionMiddleware } from '../../../middleware/permission';
 
 const ApiKeyUsageQuerySchema = z
   .object({
@@ -52,10 +51,7 @@ export default (app: HonoApp) =>
       path: '/analytics/api-key-usage',
       tags: ['Analytics'],
       description: 'Get detailed usage analytics for a specific API key',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'usage_analytics', (c) => c.get('user')?.id || ''),
-      ],
+      middleware: [authMiddleware],
       request: {
         query: ApiKeyUsageQuerySchema,
       },
@@ -68,6 +64,12 @@ export default (app: HonoApp) =>
         },
         401: {
           description: 'Unauthorized',
+          content: {
+            'application/json': { schema: z.object({ message: z.string() }) },
+          },
+        },
+        403: {
+          description: 'Forbidden - No permission to view analytics for this API key',
           content: {
             'application/json': { schema: z.object({ message: z.string() }) },
           },
@@ -93,12 +95,28 @@ export default (app: HonoApp) =>
       const { keyId, startDate, endDate, type } = c.req.query();
 
       try {
+        // Check permission for this specific API key
+        const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
+        const permissionResult = await permissionManager.checkPermission({
+          user: user.id,
+          type: 'api_key',
+          id: keyId,
+          permission: 'usage_analytics',
+          bypassCache: false,
+        });
+
+        if (!permissionResult.allowed) {
+          throw new HTTPException(403, {
+            message: 'You do not have permission to view analytics for this API key',
+          });
+        }
+
         const [apiKeyManager, analyticsManager] = await Promise.all([
           c.env.API_KEY_SERVICE.apiKeyManager(),
           c.env.ANALYTICS_SERVICE.analyticsManager(),
         ]);
 
-        // Verify API key belongs to user
+        // Verify API key exists and get its details
         const apiKeysResult = await apiKeyManager.getUserApiKeys(user.id);
         const apiKeys = apiKeysResult.data || [];
         const apiKey = apiKeys.find((key) => key.id === keyId);

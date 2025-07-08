@@ -2,7 +2,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { HonoApp, HonoContext } from '../../../type';
 import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
-import { permissionMiddleware } from '../../../middleware/permission';
 
 const ApiKeyItemSchema = z
   .object({
@@ -30,11 +29,11 @@ export default (app: HonoApp) =>
       method: 'get',
       path: '/api-keys',
       tags: ['API Keys'],
-      description: 'Get all API keys for the authenticated user',
-      middleware: [authMiddleware, permissionMiddleware('api_key', 'api_key_manage', (c) => '*')],
+      description: 'Get all API keys that the authenticated user has permission to view',
+      middleware: [authMiddleware],
       responses: {
         200: {
-          description: "User's API keys",
+          description: "User's permitted API keys",
           content: {
             'application/json': { schema: GetApiKeysResponseSchema },
           },
@@ -57,6 +56,7 @@ export default (app: HonoApp) =>
       const user = c.get('user');
       if (!user) throw new HTTPException(401, { message: 'Unauthorized' });
 
+      // Get all API keys for the user from the database
       const apiKeyManager = await c.env.API_KEY_SERVICE.apiKeyManager();
       const result = await apiKeyManager.getUserApiKeys(user.id);
 
@@ -64,22 +64,44 @@ export default (app: HonoApp) =>
         throw new HTTPException(500, { message: result.error || 'Failed to get API keys' });
       }
 
-      const apiKeys =
-        result.data?.map((key) => ({
-          id: key.id,
-          name: key.name,
-          keyPrefix: key.keyPrefix,
-          permissions: JSON.parse(key.permissions),
-          isActive: key.isActive,
-          lastUsed: key.lastUsed ? key.lastUsed.toISOString() : null,
-          createdAt: key.createdAt.toISOString(),
-          expiresAt: key.expiresAt ? key.expiresAt.toISOString() : null,
-        })) || [];
+      // Get permission manager to check permissions for each API key
+      const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
+
+      // Filter API keys based on permissions - only return keys the user can view
+      const permittedApiKeys = [];
+      for (const key of result.data || []) {
+        try {
+          // Check if user has 'view' permission on this specific API key OR on wildcard (*)
+          const permissionResult = await permissionManager.checkPermission({
+            user: user.id,
+            type: 'api_key',
+            id: key.id,
+            permission: 'view',
+            bypassCache: false,
+          });
+
+          if (permissionResult.allowed) {
+            permittedApiKeys.push({
+              id: key.id,
+              name: key.name,
+              keyPrefix: key.keyPrefix,
+              permissions: JSON.parse(key.permissions),
+              isActive: key.isActive,
+              lastUsed: key.lastUsed ? key.lastUsed.toISOString() : null,
+              createdAt: key.createdAt.toISOString(),
+              expiresAt: key.expiresAt ? key.expiresAt.toISOString() : null,
+            });
+          }
+        } catch (error) {
+          console.error(`Error checking permission for API key ${key.id}:`, error);
+          // Skip this key if permission check fails
+        }
+      }
 
       return c.json(
         {
           success: true,
-          data: apiKeys,
+          data: permittedApiKeys,
         },
         200
       );

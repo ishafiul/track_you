@@ -11,11 +11,13 @@ import {
   SelectApiKeyUsage,
 } from "../../drizzle/schema";
 import { Bindings } from "../config/bindings";
+import { RpcTarget } from "cloudflare:workers";
 
-export class ApiKeyManager {
+export class ApiKeyManager extends RpcTarget {
   private db: ReturnType<typeof drizzle>;
 
-  constructor(private env: Bindings) {
+  constructor(env: Bindings) {
+    super();
     const client = createClient({
       url: env.TURSO_URL,
       authToken: env.TURSO_AUTH_TOKEN,

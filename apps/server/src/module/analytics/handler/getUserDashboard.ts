@@ -2,7 +2,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { HonoApp, HonoContext } from '../../../type';
 import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
-import { permissionMiddleware } from '../../../middleware/permission';
 
 const DashboardStatsSchema = z
   .object({
@@ -43,11 +42,8 @@ export default (app: HonoApp) =>
       method: 'get',
       path: '/analytics/dashboard',
       tags: ['Analytics'],
-      description: 'Get dashboard analytics overview',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'usage_analytics', (c) => c.get('user')?.id || ''),
-      ],
+      description: 'Get dashboard analytics overview for permitted API keys',
+      middleware: [authMiddleware],
       responses: {
         200: {
           description: 'Dashboard analytics retrieved successfully',
@@ -79,14 +75,36 @@ export default (app: HonoApp) =>
           c.env.ANALYTICS_SERVICE.analyticsManager(),
         ]);
 
-        // Get user's API keys
+        // Get user's API keys and filter by permission
         const apiKeysResult = await apiKeyManager.getUserApiKeys(user.id);
-        const apiKeys = apiKeysResult.data || [];
+        const allApiKeys = apiKeysResult.data || [];
 
-        const totalApiKeys = apiKeys.length;
-        const activeApiKeys = apiKeys.filter((key) => key.isActive).length;
+        const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
+        const permittedApiKeys = [];
 
-        // Get recent daily stats (last 7 days)
+        // Filter API keys based on analytics permissions
+        for (const key of allApiKeys) {
+          try {
+            const permissionResult = await permissionManager.checkPermission({
+              user: user.id,
+              type: 'api_key',
+              id: key.id,
+              permission: 'usage_analytics',
+              bypassCache: false,
+            });
+
+            if (permissionResult.allowed) {
+              permittedApiKeys.push(key);
+            }
+          } catch (error) {
+            console.error(`Error checking analytics permission for API key ${key.id}:`, error);
+          }
+        }
+
+        const totalApiKeys = permittedApiKeys.length;
+        const activeApiKeys = permittedApiKeys.filter((key) => key.isActive).length;
+
+        // Get recent daily stats (last 7 days) - only for permitted keys
         const endDate = new Date();
         const startDate = new Date(endDate);
         startDate.setDate(endDate.getDate() - 7);
@@ -96,7 +114,13 @@ export default (app: HonoApp) =>
           endDate: endDate.toISOString().split('T')[0],
         });
 
-        const dailyStats = dailyStatsResult.data || [];
+        let dailyStats = dailyStatsResult.data || [];
+
+        // Filter daily stats to only include permitted API keys
+        const permittedKeyIds = permittedApiKeys.map((key) => key.id);
+        dailyStats = dailyStats.filter(
+          (stat) => !stat.apiKeyId || permittedKeyIds.includes(stat.apiKeyId)
+        );
 
         // Calculate totals
         const totalRequests = dailyStats.reduce((sum, stat) => sum + stat.totalRequests, 0);
@@ -121,14 +145,25 @@ export default (app: HonoApp) =>
           startMonth: thisMonth,
           endMonth: thisMonth,
         });
-        const monthlyStats = monthlyStatsResult.data || [];
+
+        let monthlyStats = monthlyStatsResult.data || [];
+        // Filter monthly stats to only include permitted API keys
+        monthlyStats = monthlyStats.filter(
+          (stat) => !stat.apiKeyId || permittedKeyIds.includes(stat.apiKeyId)
+        );
+
         const requestsThisMonth = monthlyStats.reduce((sum, stat) => sum + stat.totalRequests, 0);
 
-        // Get recent usage events to build top endpoints
+        // Get recent usage events to build top endpoints - only for permitted API keys
         const recentEventsResult = await analyticsManager.getUserUsageEvents(user.id, {
           limit: 1000, // Get more events for better endpoint analysis
         });
-        const recentEvents = recentEventsResult.data || [];
+        let recentEvents = recentEventsResult.data || [];
+
+        // Filter events to only include permitted API keys
+        recentEvents = recentEvents.filter(
+          (event) => !event.apiKeyId || permittedKeyIds.includes(event.apiKeyId)
+        );
 
         // Calculate top endpoints
         const endpointMap = new Map<string, number>();

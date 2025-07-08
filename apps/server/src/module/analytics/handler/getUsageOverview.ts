@@ -2,7 +2,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { HonoApp, HonoContext } from '../../../type';
 import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
-import { permissionMiddleware } from '../../../middleware/permission';
 
 const UsageOverviewQuerySchema = z
   .object({
@@ -59,11 +58,8 @@ export default (app: HonoApp) =>
       method: 'get',
       path: '/analytics/overview',
       tags: ['Analytics'],
-      description: 'Get comprehensive usage analytics overview',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'usage_analytics', (c) => c.get('user')?.id || ''),
-      ],
+      description: 'Get comprehensive usage analytics overview for permitted API keys',
+      middleware: [authMiddleware],
       request: {
         query: UsageOverviewQuerySchema,
       },
@@ -100,6 +96,35 @@ export default (app: HonoApp) =>
           c.env.ANALYTICS_SERVICE.analyticsManager(),
         ]);
 
+        // Get API keys and filter by permission
+        const apiKeysResult = await apiKeyManager.getUserApiKeys(user.id);
+        const allApiKeys = apiKeysResult.data || [];
+
+        const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
+        const permittedApiKeys: any[] = [];
+
+        // Filter API keys based on analytics permissions
+        for (const key of allApiKeys) {
+          try {
+            const permissionResult = await permissionManager.checkPermission({
+              user: user.id,
+              type: 'api_key',
+              id: key.id,
+              permission: 'usage_analytics',
+              bypassCache: false,
+            });
+
+            if (permissionResult.allowed) {
+              permittedApiKeys.push(key);
+            }
+          } catch (error) {
+            console.error(`Error checking analytics permission for API key ${key.id}:`, error);
+          }
+        }
+
+        const totalApiKeys = permittedApiKeys.length;
+        const permittedKeyIds = permittedApiKeys.map((key) => key.id);
+
         // Calculate date range
         const endDate = new Date();
         const startDate = new Date();
@@ -115,18 +140,18 @@ export default (app: HonoApp) =>
             break;
         }
 
-        // Get API keys
-        const apiKeysResult = await apiKeyManager.getUserApiKeys(user.id);
-        const apiKeys = apiKeysResult.data || [];
-        const totalApiKeys = apiKeys.length;
-
         // Get daily stats for the period
         const dailyStatsResult = await analyticsManager.getDailyUsageStats(user.id, {
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
         });
 
-        const dailyStats = dailyStatsResult.data || [];
+        let dailyStats = dailyStatsResult.data || [];
+
+        // Filter daily stats to only include permitted API keys
+        dailyStats = dailyStats.filter(
+          (stat) => !stat.apiKeyId || permittedKeyIds.includes(stat.apiKeyId)
+        );
 
         // Calculate totals
         const totalRequests = dailyStats.reduce((sum, stat) => sum + stat.totalRequests, 0);
@@ -156,11 +181,11 @@ export default (app: HonoApp) =>
           averageResponseTime: stat.averageResponseTime,
         }));
 
-        // Get API key breakdown
+        // Get API key breakdown - only for permitted keys
         const apiKeyStatsMap = new Map<string, { requests: number; name: string }>();
         dailyStats.forEach((stat) => {
           const current = apiKeyStatsMap.get(stat.apiKeyId) || { requests: 0, name: '' };
-          const apiKey = apiKeys.find((key) => key.id === stat.apiKeyId);
+          const apiKey = permittedApiKeys.find((key) => key.id === stat.apiKeyId);
           apiKeyStatsMap.set(stat.apiKeyId, {
             requests: current.requests + stat.totalRequests,
             name: apiKey?.name || 'Unknown',
@@ -177,14 +202,20 @@ export default (app: HonoApp) =>
             percentage: totalRequests > 0 ? (data.requests / totalRequests) * 100 : 0,
           }));
 
-        // Get recent events for status code breakdown
+        // Get recent events for status code breakdown - only for permitted API keys
         const recentEventsResult = await analyticsManager.getUserUsageEvents(user.id, {
           startDate,
           endDate,
           limit: 10000, // Get more events for better analysis
         });
 
-        const recentEvents = recentEventsResult.data || [];
+        let recentEvents = recentEventsResult.data || [];
+
+        // Filter events to only include permitted API keys
+        recentEvents = recentEvents.filter(
+          (event) => !event.apiKeyId || permittedKeyIds.includes(event.apiKeyId)
+        );
+
         const statusCodeMap = new Map<number, number>();
         recentEvents.forEach((event) => {
           const count = statusCodeMap.get(event.statusCode) || 0;

@@ -15,11 +15,13 @@ import {
   SelectDailyUsageStats,
   SelectMonthlyUsageStats,
 } from "../../drizzle/schema";
+import { RpcTarget } from "cloudflare:workers";
 
-export class AnalyticsManager {
+export class AnalyticsManager extends RpcTarget {
   private db: ReturnType<typeof drizzle>;
 
   constructor(private env: Bindings) {
+    super();
     const client = createClient({
       url: env.TURSO_URL,
       authToken: env.TURSO_AUTH_TOKEN,

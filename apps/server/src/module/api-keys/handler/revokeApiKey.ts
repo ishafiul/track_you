@@ -20,7 +20,7 @@ export default (app: HonoApp) =>
       description: 'Revoke an API key',
       middleware: [
         authMiddleware,
-        permissionMiddleware('api_key', 'api_key_manage', (c) => c.req.param('keyId')),
+        permissionMiddleware('api_key', 'delete', (c) => c.req.param('keyId')),
       ],
       request: {
         params: z.object({

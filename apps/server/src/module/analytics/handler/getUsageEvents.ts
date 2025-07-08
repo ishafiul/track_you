@@ -2,7 +2,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { HonoApp, HonoContext } from '../../../type';
 import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
-import { permissionMiddleware } from '../../../middleware/permission';
 
 const UsageEventsQuerySchema = z
   .object({
@@ -49,11 +48,8 @@ export default (app: HonoApp) =>
       method: 'get',
       path: '/analytics/usage-events',
       tags: ['Analytics'],
-      description: 'Get detailed usage events for API keys',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'usage_analytics', (c) => c.get('user')?.id || ''),
-      ],
+      description: 'Get detailed usage events for permitted API keys',
+      middleware: [authMiddleware],
       request: {
         query: UsageEventsQuerySchema,
       },
@@ -66,6 +62,12 @@ export default (app: HonoApp) =>
         },
         401: {
           description: 'Unauthorized',
+          content: {
+            'application/json': { schema: z.object({ message: z.string() }) },
+          },
+        },
+        403: {
+          description: 'Forbidden - No permission to view events for this API key',
           content: {
             'application/json': { schema: z.object({ message: z.string() }) },
           },
@@ -84,21 +86,77 @@ export default (app: HonoApp) =>
 
       const { apiKeyId, startDate, endDate, limit, offset } = c.req.query();
 
-      const analyticsManager = await c.env.ANALYTICS_SERVICE.analyticsManager();
-      const result = await analyticsManager.getUserUsageEvents(user.id, {
-        apiKeyId,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
-        limit: limit ? parseInt(limit) : 50,
-        offset: offset ? parseInt(offset) : 0,
-      });
+      try {
+        const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
 
-      if (!result.success) {
-        throw new HTTPException(500, { message: result.error || 'Failed to get usage events' });
-      }
+        // If specific API key is requested, check permission for it
+        if (apiKeyId) {
+          const permissionResult = await permissionManager.checkPermission({
+            user: user.id,
+            type: 'api_key',
+            id: apiKeyId,
+            permission: 'usage_analytics',
+            bypassCache: false,
+          });
 
-      const events =
-        result.data?.map((event) => ({
+          if (!permissionResult.allowed) {
+            throw new HTTPException(403, {
+              message: 'You do not have permission to view events for this API key',
+            });
+          }
+        }
+
+        const analyticsManager = await c.env.ANALYTICS_SERVICE.analyticsManager();
+
+        // Get all events
+        const result = await analyticsManager.getUserUsageEvents(user.id, {
+          apiKeyId,
+          startDate: startDate ? new Date(startDate) : undefined,
+          endDate: endDate ? new Date(endDate) : undefined,
+          limit: limit ? parseInt(limit) : 50,
+          offset: offset ? parseInt(offset) : 0,
+        });
+
+        if (!result.success) {
+          throw new HTTPException(500, { message: result.error || 'Failed to get usage events' });
+        }
+
+        let events = result.data || [];
+
+        // If no specific API key was requested, filter events to only include permitted API keys
+        if (!apiKeyId && events.length > 0) {
+          const apiKeyManager = await c.env.API_KEY_SERVICE.apiKeyManager();
+          const apiKeysResult = await apiKeyManager.getUserApiKeys(user.id);
+          const allApiKeys = apiKeysResult.data || [];
+
+          const permittedKeyIds: string[] = [];
+
+          // Check permission for each API key
+          for (const key of allApiKeys) {
+            try {
+              const permissionResult = await permissionManager.checkPermission({
+                user: user.id,
+                type: 'api_key',
+                id: key.id,
+                permission: 'usage_analytics',
+                bypassCache: false,
+              });
+
+              if (permissionResult.allowed) {
+                permittedKeyIds.push(key.id);
+              }
+            } catch (error) {
+              console.error(`Error checking analytics permission for API key ${key.id}:`, error);
+            }
+          }
+
+          // Filter events to only include permitted API keys
+          events = events.filter(
+            (event) => !event.apiKeyId || permittedKeyIds.includes(event.apiKeyId)
+          );
+        }
+
+        const formattedEvents = events.map((event) => ({
           id: event.id,
           apiKeyId: event.apiKeyId,
           endpoint: event.endpoint,
@@ -111,18 +169,25 @@ export default (app: HonoApp) =>
           ipAddress: event.ipAddress,
           timestamp: event.timestamp.toISOString(),
           metadata: event.metadata ? JSON.parse(event.metadata) : null,
-        })) || [];
+        }));
 
-      return c.json(
-        {
-          success: true,
-          data: events,
-          pagination: {
-            limit: parseInt(limit) || 50,
-            offset: parseInt(offset) || 0,
+        return c.json(
+          {
+            success: true,
+            data: formattedEvents,
+            pagination: {
+              limit: parseInt(limit) || 50,
+              offset: parseInt(offset) || 0,
+            },
           },
-        },
-        200
-      );
+          200
+        );
+      } catch (error) {
+        if (error instanceof HTTPException) {
+          throw error;
+        }
+        console.error('Error getting usage events:', error);
+        throw new HTTPException(500, { message: 'Failed to get usage events' });
+      }
     }
   );

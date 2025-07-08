@@ -4,6 +4,47 @@ import { HTTPException } from 'hono/http-exception';
 import { authMiddleware } from '../../../middleware/auth';
 import { permissionMiddleware } from '../../../middleware/permission';
 
+// Helper function to ensure API key roles exist
+async function ensureApiKeyRolesExist(permissionManager: any) {
+  try {
+    // Check if roles already exist
+    const roles = await permissionManager.listRoles({ type: 'api_key' });
+
+    // Create 'owner' role if it doesn't exist
+    if (!roles.roles['owner']) {
+      await permissionManager.defineRole({
+        type: 'api_key',
+        role: 'owner',
+        permissions: ['api_key_manage', 'delete', 'view', 'edit', 'usage_analytics'],
+        inherits: [],
+      });
+    }
+
+    // Create 'manager' role if it doesn't exist
+    if (!roles.roles['manager']) {
+      await permissionManager.defineRole({
+        type: 'api_key',
+        role: 'manager',
+        permissions: ['api_key_manage', 'view', 'edit', 'usage_analytics'],
+        inherits: [],
+      });
+    }
+
+    // Create 'viewer' role if it doesn't exist
+    if (!roles.roles['viewer']) {
+      await permissionManager.defineRole({
+        type: 'api_key',
+        role: 'viewer',
+        permissions: ['view', 'usage_analytics'],
+        inherits: [],
+      });
+    }
+  } catch (error) {
+    console.error('Error ensuring API key roles exist:', error);
+    // Don't throw - we'll continue and let the permission assignment fail if needed
+  }
+}
+
 const GenerateApiKeySchema = z
   .object({
     name: z.string().min(1, 'Name is required'),
@@ -32,10 +73,7 @@ export default (app: HonoApp) =>
       path: '/api-keys/generate',
       tags: ['API Keys'],
       description: 'Generate a new API key (requires active subscription)',
-      middleware: [
-        authMiddleware,
-        permissionMiddleware('api_key', 'api_key_create', (c) => c.get('user')?.id || ''),
-      ],
+      middleware: [authMiddleware, permissionMiddleware('api_key', 'api_key_create', (c) => '*')],
       request: {
         body: {
           content: {
@@ -107,6 +145,18 @@ export default (app: HonoApp) =>
       if (!result.success || !result.data) {
         throw new HTTPException(500, { message: result.error || 'Failed to generate API key' });
       }
+
+      // Ensure API key roles exist and grant the user ownership permission
+      const permissionManager = await c.env.PERMISSION_MANAGER.newPermissionManager();
+      await ensureApiKeyRolesExist(permissionManager);
+
+      await permissionManager.grantRole({
+        subject: `user:${user.id}`,
+        type: 'api_key',
+        id: result.data.keyId,
+        role: 'owner',
+        expires_at: null,
+      });
 
       return c.json(
         {
